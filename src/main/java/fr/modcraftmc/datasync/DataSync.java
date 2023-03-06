@@ -1,6 +1,9 @@
 package fr.modcraftmc.datasync;
 
 import com.mojang.logging.LogUtils;
+import fr.modcraftmc.datasync.command.DataSyncCommand;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
@@ -15,9 +18,15 @@ public class DataSync {
     public DataSync(){
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::serverSetup);
+
+        MinecraftForge.EVENT_BUS.addListener(this::commandResister);
     }
 
     public void serverSetup(FMLDedicatedServerSetupEvent event){
-        LOGGER.info("Server setup");
+
+    }
+
+    public void commandResister(RegisterCommandsEvent event){
+        new DataSyncCommand(event.getDispatcher());
     }
 }

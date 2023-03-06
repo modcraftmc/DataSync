@@ -1,13 +1,15 @@
 package fr.modcraftmc.datasync.command;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import fr.modcraftmc.datasync.serialization.PlayerInventorySerializer;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-
-import java.util.ArrayList;
+import net.minecraftforge.fml.ModList;
+import top.theillusivec4.curios.api.CuriosCapability;
 
 public class TestCommand {
     private JsonObject inventory;
@@ -42,6 +44,11 @@ public class TestCommand {
                     .executes(context -> {
                         loadInventory(context.getSource());
                         return 1;
+                    }))
+                .then(Commands.literal("showjson")
+                    .executes(context -> {
+                        showJson(context.getSource());
+                        return 1;
                     }));
     }
 
@@ -52,6 +59,13 @@ public class TestCommand {
 
     private void clearInventory(CommandSourceStack source){
         source.getPlayer().getInventory().clearContent();
+
+        if(ModList.get().isLoaded("curios")){
+            source.getPlayer().getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
+                itemHandler.saveInventory(true);
+            });
+        }
+
         source.sendSuccess(Component.literal("Inventory cleared"), true);
     }
 
@@ -63,5 +77,16 @@ public class TestCommand {
         else {
             source.sendFailure(Component.literal("Inventory is null"));
         }
+    }
+
+    public void showJson(CommandSourceStack source){
+        String json;
+        JsonObject jsonObject = PlayerInventorySerializer.serializeInventory(source.getPlayer().getInventory());
+        Gson gson = new GsonBuilder()
+                        .setPrettyPrinting()
+                        .create();
+        json = gson.toJson(jsonObject);
+
+        source.sendSuccess(Component.literal(json), true);
     }
 }

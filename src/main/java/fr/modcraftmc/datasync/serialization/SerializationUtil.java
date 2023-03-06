@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.serialization;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.world.item.ItemStack;

@@ -12,7 +12,8 @@ public class DataSyncCommand {
     public static final ArrayList<LiteralArgumentBuilder<CommandSourceStack>> COMMANDS = new ArrayList<>();
 
     public DataSyncCommand(CommandDispatcher<CommandSourceStack> dispatcher){
-        new TestCommand(this);
+        new SerializerTestCommand(this);
+        new RabbitmqTestCommand(this);
         register(dispatcher);
     }
 

@@ -15,12 +15,12 @@ import top.theillusivec4.curios.api.CuriosCapability;
 import java.io.*;
 import java.util.Objects;
 
-public class TestCommand {
+public class SerializerTestCommand {
     private JsonObject playerInfo;
 
     private LiteralArgumentBuilder<CommandSourceStack> commandTree;
 
-    public TestCommand(DataSyncCommand dataSyncCommand) {
+    public SerializerTestCommand(DataSyncCommand dataSyncCommand) {
         buildCommand();
         dataSyncCommand.registerCommand(commandTree);
     }

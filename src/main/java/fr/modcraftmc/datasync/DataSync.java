@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
+import fr.modcraftmc.datasync.message.MessageHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -20,6 +21,7 @@ public class DataSync {
         modEventBus.addListener(this::serverSetup);
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
+        MessageHandler.init();
     }
 
     public void serverSetup(FMLDedicatedServerSetupEvent event){

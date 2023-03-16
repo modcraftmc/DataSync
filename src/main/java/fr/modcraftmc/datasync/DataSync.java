@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
 @Mod(DataSync.MOD_ID)
@@ -29,8 +30,6 @@ public class DataSync {
     public static final String MOD_ID = "datasync";
     public static final Logger LOGGER = LogUtils.getLogger();
     private RabbitmqConnection rabbitmqConnection;
-    private RabbitmqDirectSubscriber rabbitmqDirectSubscriber;
-    private RabbitmqDirectPublisher rabbitmqDirectPublisher;
     public String serverName;
 
     public DataSync(){
@@ -46,7 +45,13 @@ public class DataSync {
             rabbitmqConnection.close();
         }
 
-        Toml config = readConfig();
+        Toml config;
+        try {
+            config = readConfig();
+        } catch (IOException e) {
+            LOGGER.error("Error while reading config file : %s".formatted(e.getMessage()));
+            throw new RuntimeException(e);
+        }
         RabbitmqConfigData configData;
         try {
             serverName = config.getString("server_name");
@@ -67,22 +72,19 @@ public class DataSync {
         initializeMessageSystem();
     }
 
-    private Toml readConfig() {
+    private Toml readConfig() throws IOException {
         File configFile = new File(FMLPaths.CONFIGDIR.get().toFile(), "datasync-config.toml");
         if (!configFile.getParentFile().exists()) {
-            configFile.getParentFile().mkdirs();
+            if(!configFile.getParentFile().mkdirs())
+                throw new IOException("Error while creating config directory");
         }
         if (!configFile.exists()) {
             LOGGER.info("Config file not found, creating one !");
-            try {
-                configFile.createNewFile();
-                OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(configFile));
-                writer.write(defaultFileContent());
-                writer.close();
-            } catch (Exception e) {
-                LOGGER.error("Error while creating config file : %s".formatted(e.getMessage()));
-                throw new RuntimeException(e);
-            }
+            if(!configFile.createNewFile())
+                throw new IOException("Error while creating config file");
+            OutputStreamWriter writer = new OutputStreamWriter(new FileOutputStream(configFile));
+            writer.write(defaultFileContent());
+            writer.close();
         }
         return new Toml().read(configFile);
     }
@@ -110,18 +112,18 @@ public class DataSync {
     }
 
     private void initializeMessageSystem(){
-        this.rabbitmqDirectPublisher = new RabbitmqDirectPublisher(rabbitmqConnection);
-        this.rabbitmqDirectSubscriber = new RabbitmqDirectSubscriber(rabbitmqConnection);
-        this.rabbitmqDirectSubscriber.subscribe(serverName, (consumerTag, message) -> {
+        new RabbitmqDirectPublisher(rabbitmqConnection);
+        new RabbitmqDirectSubscriber(rabbitmqConnection);
+        RabbitmqDirectSubscriber.instance.subscribe(serverName, (consumerTag, message) -> {
             DataSync.LOGGER.debug("Received message: " + new String(message.getBody()));
-            String messageName = new String(message.getBody(), "UTF-8");
+            String messageName = new String(message.getBody(), StandardCharsets.UTF_8);
             Gson gson = new Gson();
             JsonObject jsonData = gson.fromJson(messageName, JsonObject.class);
             MessageHandler.handle(jsonData);
         });
     }
 
-    private class RabbitmqConfigData {
+    private static class RabbitmqConfigData {
         private String host;
         private int port;
         private String username;

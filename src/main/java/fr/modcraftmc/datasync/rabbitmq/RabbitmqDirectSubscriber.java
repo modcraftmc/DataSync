@@ -10,7 +10,7 @@ public class RabbitmqDirectSubscriber {
     private final String EXCHANGE_NAME = "direct_events";
     public static RabbitmqDirectSubscriber instance;
 
-    private Channel rabbitmqChannel;
+    private final Channel rabbitmqChannel;
 
     public RabbitmqDirectSubscriber(RabbitmqConnection rabbitmqConnection) {
         this.rabbitmqChannel = rabbitmqConnection.createChannel();

@@ -8,8 +8,8 @@ import fr.modcraftmc.datasync.PlayerDataLoader;
 public class LoadDataMessage extends BaseMessage{
     public static final String MESSAGE_NAME = "LoadDataMessage";
 
-    private String playerName;
-    private String data;
+    private final String playerName;
+    private final String data;
 
     LoadDataMessage(String playerName, String data) {
         super(MESSAGE_NAME);

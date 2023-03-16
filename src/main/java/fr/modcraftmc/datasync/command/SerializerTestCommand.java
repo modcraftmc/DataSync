@@ -79,11 +79,8 @@ public class SerializerTestCommand {
     private void clearInventory(CommandSourceStack source){
         source.getPlayer().getInventory().clearContent();
 
-        if(ModList.get().isLoaded("curios")){
-            source.getPlayer().getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                itemHandler.saveInventory(true);
-            });
-        }
+        if(ModList.get().isLoaded("curios"))
+            source.getPlayer().getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> itemHandler.saveInventory(true));
 
         source.sendSuccess(Component.literal("Inventory cleared"), true);
     }

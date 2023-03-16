@@ -12,27 +12,15 @@ import java.io.IOException;
 
 public class TransferMessage extends BaseMessage {
     public static final String MESSAGE_NAME = "TransferMessage";
-    private String playerName;
-    private String oldServerName;
-    private String newServerName;
+    private final String playerName;
+    private final String oldServerName;
+    private final String newServerName;
 
     public TransferMessage(String playerName, String oldServerName, String newServerName) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.oldServerName = oldServerName;
         this.newServerName = newServerName;
-    }
-
-    public String getPlayerName() {
-        return playerName;
-    }
-
-    public String getOldServerName() {
-        return oldServerName;
-    }
-
-    public String getNewServerName() {
-        return newServerName;
     }
 
     public JsonObject Serialize() {

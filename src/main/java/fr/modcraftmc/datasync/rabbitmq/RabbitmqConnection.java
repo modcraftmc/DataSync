@@ -11,23 +11,11 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 public class RabbitmqConnection {
-    private String host;
-    private int port;
-    private String username;
-    private String password;
-    private String virtualHost;
+    private final Connection connection;
 
-    private Connection connection;
-
-    private List<Channel> channels = new ArrayList<Channel>();
+    private final List<Channel> channels = new ArrayList<>();
 
     public RabbitmqConnection(String host, int port, String username, String password, String virtualHost) throws IOException, TimeoutException {
-        this.host = host;
-        this.port = port;
-        this.username = username;
-        this.password = password;
-        this.virtualHost = virtualHost;
-
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(host);
         factory.setPort(port);
@@ -40,26 +28,6 @@ public class RabbitmqConnection {
 
     public RabbitmqConnection(String host, String username, String password, String virtualHost) throws IOException, TimeoutException {
         this(host, 5672, username, password, virtualHost);
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getVirtualHost() {
-        return virtualHost;
     }
 
     public Channel createChannel() {

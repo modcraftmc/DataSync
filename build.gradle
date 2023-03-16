@@ -168,6 +168,7 @@ dependencies {
     // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}")
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
+    shade 'com.moandjiezana.toml:toml4j:0.7.2'
     shade 'com.rabbitmq:amqp-client:5.16.0'
 
 
@@ -190,6 +191,7 @@ shadowJar {
     classifier = 'shade'
     dependencies {
         exclude(dependency('org.slf4j:slf4j-api'))
+        exclude(dependency('com.google.code.gson:gson'))
     }
 }
 

@@ -13,6 +13,7 @@ public class MessageHandler {
     public static void init(){
         messageMap.put(TransferMessage.MESSAGE_NAME, TransferMessage::Deserialize);
         messageMap.put(SaveToDBMessage.MESSAGE_NAME, SaveToDBMessage::Deserialize);
+        messageMap.put(LoadDataMessage.MESSAGE_NAME, LoadDataMessage::Deserialize);
     }
 
     public static void handle(JsonObject message){

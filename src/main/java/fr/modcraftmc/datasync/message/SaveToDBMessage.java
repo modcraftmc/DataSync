@@ -1,14 +1,18 @@
 package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
+import fr.modcraftmc.datasync.DataSync;
+import fr.modcraftmc.datasync.serialization.PlayerSerializer;
+import net.minecraft.world.entity.player.Player;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
-public class SaveToDBMessage extends BaseMessage<SaveToDBMessage> {
+public class SaveToDBMessage extends BaseMessage {
     public static final String MESSAGE_NAME = "SaveToDBMessage";
     private String playerName;
     private String serverName;
 
     public SaveToDBMessage(String playerName, String serverName) {
-        super(MESSAGE_NAME, SaveToDBMessage::Deserialize);
+        super(MESSAGE_NAME);
         this.playerName = playerName;
         this.serverName = serverName;
     }
@@ -36,6 +40,9 @@ public class SaveToDBMessage extends BaseMessage<SaveToDBMessage> {
 
     @Override
     protected void Handle() {
+        DataSync.LOGGER.info("Saving player %s data to database: " + playerName);
+        Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
+        JsonObject playerData = PlayerSerializer.serializePlayer(player);
         // TODO: save player data to database
     }
 }

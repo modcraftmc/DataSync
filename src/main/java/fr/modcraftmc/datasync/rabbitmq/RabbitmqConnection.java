@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync.rabbitmq;
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;
 import com.rabbitmq.client.ConnectionFactory;
+import fr.modcraftmc.datasync.DataSync;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class RabbitmqConnection {
             channels.add(channel);
             return channel;
         } catch (IOException e) {
+            DataSync.LOGGER.error(String.format("Error while creating rabbitmq channel %s", e.getMessage()));
             throw new RuntimeException(e);
         }
     }
@@ -76,12 +78,14 @@ public class RabbitmqConnection {
             try {
                 channel.close();
             } catch (IOException | TimeoutException e) {
+                DataSync.LOGGER.error(String.format("Error while closing rabbitmq channel %s", e.getMessage()));
                 throw new RuntimeException(e);
             }
         }
         try {
             connection.close();
         } catch (IOException e) {
+            DataSync.LOGGER.error(String.format("Error while closing rabbitmq connection %s", e.getMessage()));
             throw new RuntimeException(e);
         }
     }

@@ -15,12 +15,14 @@ public class TransferMessage extends BaseMessage {
     private final String playerName;
     private final String oldServerName;
     private final String newServerName;
+    private final boolean areLinked;
 
-    public TransferMessage(String playerName, String oldServerName, String newServerName) {
+    public TransferMessage(String playerName, String oldServerName, String newServerName, boolean areLinked) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.oldServerName = oldServerName;
         this.newServerName = newServerName;
+        this.areLinked = areLinked;
     }
 
     public JsonObject Serialize() {
@@ -28,11 +30,14 @@ public class TransferMessage extends BaseMessage {
         jsonObject.addProperty("oldServerName", oldServerName);
         jsonObject.addProperty("newServerName", newServerName);
         jsonObject.addProperty("playerName", playerName);
+        jsonObject.addProperty("areLinked", areLinked);
         return jsonObject;
     }
 
     @Override
     protected void Handle() {
+        if(!areLinked) return;
+
         DataSync.LOGGER.info(String.format("Transferring player %s data to server %s: ", playerName, newServerName));
         Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
@@ -49,6 +54,7 @@ public class TransferMessage extends BaseMessage {
         String oldServerName = json.get("oldServerName").getAsString();
         String newServerName = json.get("newServerName").getAsString();
         String playerName = json.get("playerName").getAsString();
-        return new TransferMessage(playerName, oldServerName, newServerName);
+        boolean areLinked = json.get("areLinked").getAsBoolean();
+        return new TransferMessage(playerName, oldServerName, newServerName, areLinked);
     }
 }

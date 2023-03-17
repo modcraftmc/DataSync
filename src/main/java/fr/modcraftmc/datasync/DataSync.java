@@ -11,7 +11,9 @@ import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectSubscriber;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -26,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeoutException;
 
 @Mod(DataSync.MOD_ID)
+@Mod.EventBusSubscriber(modid = DataSync.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class DataSync {
     public static final String MOD_ID = "datasync";
     public static final Logger LOGGER = LogUtils.getLogger();
@@ -37,6 +40,7 @@ public class DataSync {
         modEventBus.addListener(this::serverSetup);
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
     }
 
     public void loadConfig(){
@@ -74,11 +78,8 @@ public class DataSync {
 
     private Toml readConfig() throws IOException {
         File configFile = new File(FMLPaths.CONFIGDIR.get().toFile(), "datasync-config.toml");
-        if (!configFile.getParentFile().exists()) {
-            if(!configFile.getParentFile().mkdirs())
-                throw new IOException("Error while creating config directory");
-        }
         if (!configFile.exists()) {
+            configFile.mkdirs();
             LOGGER.info("Config file not found, creating one !");
             if(!configFile.createNewFile())
                 throw new IOException("Error while creating config file");
@@ -102,9 +103,16 @@ public class DataSync {
                 """;
     }
 
+    @SubscribeEvent
     public void serverSetup(FMLDedicatedServerSetupEvent event){
         MessageHandler.init();
         loadConfig();
+        PlayerDataInvalidator.loadPlayerDataInvalidated();
+    }
+
+    public void onServerStop(ServerStoppingEvent event){
+        DataSync.LOGGER.info("Server stopping, saving player data");
+        PlayerDataInvalidator.savePlayerDataInvalidated();
     }
 
     public void commandResister(RegisterCommandsEvent event){

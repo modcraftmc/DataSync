@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync.message;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
+import fr.modcraftmc.datasync.PlayerDataInvalidator;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
 import fr.modcraftmc.datasync.serialization.PlayerSerializer;
 import net.minecraft.world.entity.player.Player;
@@ -38,16 +39,21 @@ public class TransferMessage extends BaseMessage {
     protected void Handle() {
         if(!areLinked) return;
 
-        DataSync.LOGGER.info(String.format("Transferring player %s data to server %s: ", playerName, newServerName));
         Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Gson gson = new Gson();
         JsonObject messageData = new LoadDataMessage(playerName, gson.toJson(playerData)).Serialize();
+        String rawMessage = gson.toJson(messageData);
+
         try {
-            RabbitmqDirectPublisher.instance.publish(newServerName, gson.toJson(messageData));
+            RabbitmqDirectPublisher.instance.publish(newServerName, rawMessage);
         } catch (IOException e) {
             DataSync.LOGGER.error(String.format("Error while publishing message to rabbitmq cannot transfer player %s data from %s to %s : %s", playerName, oldServerName, newServerName, e.getMessage()));
         }
+
+        //TODO: save player data to database
+
+        PlayerDataInvalidator.invalidatePlayerData(playerName);
     }
 
     protected static TransferMessage Deserialize(JsonObject json) {

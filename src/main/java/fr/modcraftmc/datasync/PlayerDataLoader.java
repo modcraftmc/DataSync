@@ -19,11 +19,23 @@ public class PlayerDataLoader {
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(event.getEntity().getName().getString());
         String playerName = player.getName().getString();
-        if (!playerData.containsKey(playerName)) {
-            DataSync.LOGGER.warn(String.format("No data found for player %s", playerName));
-            return;
-        }
-        JsonObject data = playerData.get(playerName);
-        PlayerSerializer.deserializePlayer(data, player);
+
+        if (loadDataFromTransferBuffer(player, playerName)) return;
+        DataSync.LOGGER.info(String.format("No transfer data found for player %s (normal if first connection on this group)", playerName));
+
+        if(!PlayerDataInvalidator.isPlayerDataInvalidated(playerName)) return;
+        DataSync.LOGGER.warn(String.format("data invalid for player %s, loading data from db", playerName));
+
+        //TODO: load data from database then validate it
     }
+
+    private static boolean loadDataFromTransferBuffer(ServerPlayer player, String playerName) {
+        if (playerData.containsKey(playerName)) {
+            JsonObject data = playerData.get(playerName);
+            PlayerSerializer.deserializePlayer(data, player);
+            return true;
+        }
+        return false;
+    }
+
 }

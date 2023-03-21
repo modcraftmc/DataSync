@@ -35,8 +35,7 @@ public class LoadDataMessage extends BaseMessage{
     protected void Handle() {
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(data, JsonObject.class);
-        PlayerDataLoader.playerData.put(playerName, playerData);
-
+        PlayerDataLoader.pushDataToTransferBuffer(playerName, playerData);
         PlayerDataInvalidator.validatePlayerData(playerName);
     }
 }

@@ -167,6 +167,7 @@ dependencies {
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
     shade 'com.moandjiezana.toml:toml4j:0.7.2'
     shade 'com.rabbitmq:amqp-client:5.16.0'
+    shade 'org.mongodb:mongodb-driver-sync:4.9.0'
 
 
     // For more info...
@@ -186,11 +187,16 @@ minecraft.runs.all {
 shadowJar {
     configurations = [project.configurations.shade]
     classifier = 'shade'
+    relocate 'org.mongodb.mongodb-driver-sync', 'shaded.mongodb-driver-sync'
     dependencies {
         exclude(dependency('org.slf4j:slf4j-api'))
         exclude(dependency('com.google.code.gson:gson'))
     }
+    finalizedBy 'reobfShadowJar'
 }
+
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+assemble.dependsOn shadowJar
 
 // Example for how to get properties into the manifest for reading at runtime.
 jar {

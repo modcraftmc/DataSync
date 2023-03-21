@@ -15,7 +15,7 @@ public class RabbitmqConnection {
 
     private final List<Channel> channels = new ArrayList<>();
 
-    public RabbitmqConnection(String host, int port, String username, String password, String virtualHost) throws IOException, TimeoutException {
+    public RabbitmqConnection(String host, int port, String username, String password, String virtualHost) {
         ConnectionFactory factory = new ConnectionFactory();
         factory.setHost(host);
         factory.setPort(port);
@@ -23,7 +23,12 @@ public class RabbitmqConnection {
         factory.setPassword(password);
         factory.setVirtualHost(virtualHost);
 
-        connection = factory.newConnection();
+        try {
+            connection = factory.newConnection();
+        } catch (IOException | TimeoutException e) {
+            DataSync.LOGGER.error("Error while connecting to RabbitMQ : %s".formatted(e.getMessage()));
+            throw new RuntimeException(e);
+        }
     }
 
     public RabbitmqConnection(String host, String username, String password, String virtualHost) throws IOException, TimeoutException {

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.PlayerDataInvalidator;
+import fr.modcraftmc.datasync.PlayerDataLoader;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
 import fr.modcraftmc.datasync.serialization.PlayerSerializer;
 import net.minecraft.world.entity.player.Player;
@@ -51,9 +52,8 @@ public class TransferMessage extends BaseMessage {
             DataSync.LOGGER.error(String.format("Error while publishing message to rabbitmq cannot transfer player %s data from %s to %s : %s", playerName, oldServerName, newServerName, e.getMessage()));
         }
 
-        //TODO: save player data to database
-
         PlayerDataInvalidator.invalidatePlayerData(playerName);
+        PlayerDataLoader.saveDataToDatabase(player);
     }
 
     protected static TransferMessage Deserialize(JsonObject json) {

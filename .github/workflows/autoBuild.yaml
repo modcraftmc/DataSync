@@ -14,7 +14,7 @@ jobs:
         with:
           java-version: '17'
       - name: Build
-      - uses: gradle/gradle-build-action@v2
+        uses: gradle/gradle-build-action@v2
         with:
           argument: build
       - name: Upload Artifact

@@ -2,10 +2,7 @@ name: Automatic Build
 on:
   push:
     branches:
-      - master
-  pull_request:
-    branches:
-      - master
+      - main
 jobs:
   build:
     runs-on: [self-hosted, linux, minecraft]
@@ -17,10 +14,9 @@ jobs:
         with:
           java-version: '17'
       - name: Build
-        run: |
-          echo "Building..."
-          gradlew build
-          echo "Done !"
+      - uses: gradle/gradle-build-action@v2
+        with:
+          argument: build
       - name: Upload Artifact
         uses: actions/upload-artifact@v2
         with:

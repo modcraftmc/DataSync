@@ -191,6 +191,9 @@ shadowJar {
         exclude(dependency('org.slf4j:slf4j-api'))
         exclude(dependency('com.google.code.gson:gson'))
     }
+
+    archiveBaseName = "${mod_name}"
+    archiveVersion = "${mc_version}-${mod_version}"
     finalizedBy 'reobfShadowJar'
 }
 

@@ -43,7 +43,7 @@ public class ConfigManager {
     private static Toml readConfigFile() throws IOException {
         File configFile = new File(FMLPaths.CONFIGDIR.get().toFile(), CONFIG_FILE_NAME);
         if (!configFile.exists()) {
-            configFile.mkdirs();
+            configFile.getParentFile().mkdirs();
             DataSync.LOGGER.info("Config file not found, creating one !");
             if(!configFile.createNewFile())
                 throw new IOException("Error while creating config file");

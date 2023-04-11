@@ -6,15 +6,15 @@ import fr.modcraftmc.datasync.References;
 
 import java.io.IOException;
 
-public class RabbitmqDirectPublisher {
-    public static RabbitmqDirectPublisher instance;
+public class RabbitmqPublisher {
+    public static RabbitmqPublisher instance;
 
     private final Channel rabbitmqChannel;
 
-    public RabbitmqDirectPublisher(RabbitmqConnection rabbitmqConnection) {
+    public RabbitmqPublisher(RabbitmqConnection rabbitmqConnection) {
         this.rabbitmqChannel = rabbitmqConnection.createChannel();
         try {
-            rabbitmqChannel.exchangeDeclare(References.DIRECT_EXCHANGE_NAME, "direct");
+            rabbitmqChannel.exchangeDeclare(References.GLOBAL_EXCHANGE_NAME, "fanout");
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while creating RabbitMQ exchange");
             throw new RuntimeException(e);
@@ -22,7 +22,7 @@ public class RabbitmqDirectPublisher {
         instance = this;
     }
 
-    public void publish(String routingKey, String message) throws IOException {
-        rabbitmqChannel.basicPublish(References.DIRECT_EXCHANGE_NAME, routingKey, null, message.getBytes());
+    public void publish(String message) throws IOException {
+        rabbitmqChannel.basicPublish(References.GLOBAL_EXCHANGE_NAME, "", null, message.getBytes());
     }
 }

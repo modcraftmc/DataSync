@@ -31,7 +31,7 @@ public class RabbitmqConnection {
         }
     }
 
-    public RabbitmqConnection(String host, String username, String password, String virtualHost) throws IOException, TimeoutException {
+    public RabbitmqConnection(String host, String username, String password, String virtualHost) {
         this(host, 5672, username, password, virtualHost);
     }
 

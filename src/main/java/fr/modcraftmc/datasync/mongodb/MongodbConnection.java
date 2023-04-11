@@ -25,4 +25,8 @@ public class MongodbConnection {
     public MongoClient getClient() {
         return client;
     }
+
+    public void close() {
+        client.close();
+    }
 }

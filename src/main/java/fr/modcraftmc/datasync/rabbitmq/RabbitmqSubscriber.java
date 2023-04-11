@@ -7,15 +7,15 @@ import fr.modcraftmc.datasync.References;
 
 import java.io.IOException;
 
-public class RabbitmqDirectSubscriber {
-    public static RabbitmqDirectSubscriber instance;
+public class RabbitmqSubscriber {
+    public static RabbitmqSubscriber instance;
 
     private final Channel rabbitmqChannel;
 
-    public RabbitmqDirectSubscriber(RabbitmqConnection rabbitmqConnection) {
+    public RabbitmqSubscriber(RabbitmqConnection rabbitmqConnection) {
         this.rabbitmqChannel = rabbitmqConnection.createChannel();
         try {
-            rabbitmqChannel.exchangeDeclare(References.DIRECT_EXCHANGE_NAME, "direct");
+            rabbitmqChannel.exchangeDeclare(References.GLOBAL_EXCHANGE_NAME, "fanout");
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while creating RabbitMQ exchange");
             throw new RuntimeException(e);
@@ -23,11 +23,11 @@ public class RabbitmqDirectSubscriber {
         instance = this;
     }
 
-    public void subscribe(String routingKey, DeliverCallback listener) {
+    public void subscribe(DeliverCallback listener) {
         String queueName = null;
         try {
             queueName = rabbitmqChannel.queueDeclare().getQueue();
-            rabbitmqChannel.queueBind(queueName, References.DIRECT_EXCHANGE_NAME, routingKey);
+            rabbitmqChannel.queueBind(queueName, References.DIRECT_EXCHANGE_NAME, "");
             rabbitmqChannel.basicConsume(queueName, true, listener, consumerTag -> {});
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while subscribing to RabbitMQ exchange");

@@ -14,5 +14,9 @@ public abstract class BaseMessage {
         return jsonObject;
     }
 
+    public String SerializeToString() {
+        return Serialize().toString();
+    }
+
     protected abstract void Handle();
 }

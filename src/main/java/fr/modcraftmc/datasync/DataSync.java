@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
+import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqConnection;
@@ -40,14 +41,12 @@ public class DataSync {
         ConfigManager.loadConfigFile();
 
         MessageHandler.init();
-        PlayerDataInvalidator.loadPlayerDataInvalidated();
         initializeMessageSystem();
         initializeDatabaseConnection();
     }
 
     public void onServerStop(ServerStoppingEvent event){
         DataSync.LOGGER.info("Server stopping, saving player data");
-        PlayerDataInvalidator.savePlayerDataInvalidated();
     }
 
     public void commandResister(RegisterCommandsEvent event){

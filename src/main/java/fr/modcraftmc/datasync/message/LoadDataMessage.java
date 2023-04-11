@@ -2,8 +2,7 @@ package fr.modcraftmc.datasync.message;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import fr.modcraftmc.datasync.PlayerDataInvalidator;
-import fr.modcraftmc.datasync.PlayerDataLoader;
+import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 
 public class LoadDataMessage extends BaseMessage{
     public static final String MESSAGE_NAME = "LoadDataMessage";
@@ -36,6 +35,5 @@ public class LoadDataMessage extends BaseMessage{
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(data, JsonObject.class);
         PlayerDataLoader.pushDataToTransferBuffer(playerName, playerData);
-        PlayerDataInvalidator.validatePlayerData(playerName);
     }
 }

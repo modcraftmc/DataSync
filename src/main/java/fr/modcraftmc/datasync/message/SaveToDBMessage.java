@@ -2,7 +2,7 @@ package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.PlayerDataLoader;
+import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.server.ServerLifecycleHooks;
 

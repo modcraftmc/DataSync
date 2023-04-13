@@ -15,9 +15,14 @@ public class MessageHandler {
     public static Gson GSON = new Gson();
 
     public static void init(){
-        messageMap.put(TransferMessage.MESSAGE_NAME, TransferMessage::Deserialize);
-        messageMap.put(SaveToDBMessage.MESSAGE_NAME, SaveToDBMessage::Deserialize);
-        messageMap.put(LoadDataMessage.MESSAGE_NAME, LoadDataMessage::Deserialize);
+        messageMap.put(TransferMessage.MESSAGE_NAME, TransferMessage::deserialize);
+        messageMap.put(SaveToDBMessage.MESSAGE_NAME, SaveToDBMessage::deserialize);
+        messageMap.put(LoadDataMessage.MESSAGE_NAME, LoadDataMessage::deserialize);
+        messageMap.put(AttachServer.MESSAGE_NAME, AttachServer::deserialize);
+        messageMap.put(AttachServerResponse.MESSAGE_NAME, AttachServerResponse::deserialize);
+        messageMap.put(DetachServer.MESSAGE_NAME, DetachServer::deserialize);
+        messageMap.put(PlayerJoined.MESSAGE_NAME, PlayerJoined::deserialize);
+        messageMap.put(PlayerLeaved.MESSAGE_NAME, PlayerLeaved::deserialize);
 
         DataSync.onConfigLoad.add(() -> {
             RabbitmqDirectSubscriber.instance.subscribe(DataSync.serverName, (consumerTag, message) -> {
@@ -36,7 +41,7 @@ public class MessageHandler {
 
     public static void handle(JsonObject message){
         if(messageMap.containsKey(message.get("messageName").getAsString()))
-            messageMap.get(message.get("messageName").getAsString()).apply(message).Handle();
+            messageMap.get(message.get("messageName").getAsString()).apply(message).handle();
         else
             DataSync.LOGGER.error("Message id not found");
     }

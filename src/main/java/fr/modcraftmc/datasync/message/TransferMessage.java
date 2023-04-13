@@ -26,8 +26,8 @@ public class TransferMessage extends BaseMessage {
         this.areLinked = areLinked;
     }
 
-    public JsonObject Serialize() {
-        JsonObject jsonObject = super.Serialize();
+    public JsonObject serialize() {
+        JsonObject jsonObject = super.serialize();
         jsonObject.addProperty("oldServerName", oldServerName);
         jsonObject.addProperty("newServerName", newServerName);
         jsonObject.addProperty("playerName", playerName);
@@ -36,13 +36,13 @@ public class TransferMessage extends BaseMessage {
     }
 
     @Override
-    protected void Handle() {
+    protected void handle() {
         if(!areLinked) return;
 
         Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Gson gson = new Gson();
-        JsonObject messageData = new LoadDataMessage(playerName, gson.toJson(playerData)).Serialize();
+        JsonObject messageData = new LoadDataMessage(playerName, gson.toJson(playerData)).serialize();
         String rawMessage = gson.toJson(messageData);
 
         try {
@@ -54,7 +54,7 @@ public class TransferMessage extends BaseMessage {
         PlayerDataLoader.saveDataToDatabase(player);
     }
 
-    protected static TransferMessage Deserialize(JsonObject json) {
+    protected static TransferMessage deserialize(JsonObject json) {
         String oldServerName = json.get("oldServerName").getAsString();
         String newServerName = json.get("newServerName").getAsString();
         String playerName = json.get("playerName").getAsString();

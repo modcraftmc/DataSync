@@ -17,21 +17,21 @@ public class SaveToDBMessage extends BaseMessage {
         this.serverName = serverName;
     }
 
-    public JsonObject Serialize() {
-        JsonObject jsonObject = super.Serialize();
+    public JsonObject serialize() {
+        JsonObject jsonObject = super.serialize();
         jsonObject.addProperty("serverName", serverName);
         jsonObject.addProperty("playerName", playerName);
         return jsonObject;
     }
 
-    public static SaveToDBMessage Deserialize(JsonObject json) {
+    public static SaveToDBMessage deserialize(JsonObject json) {
         String serverName = json.get("serverName").getAsString();
         String playerName = json.get("playerName").getAsString();
         return new SaveToDBMessage(playerName, serverName);
     }
 
     @Override
-    protected void Handle() {
+    protected void handle() {
         DataSync.LOGGER.info("Saving player %s data to database: " + playerName);
         Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
 

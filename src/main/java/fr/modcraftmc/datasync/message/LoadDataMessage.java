@@ -17,21 +17,21 @@ public class LoadDataMessage extends BaseMessage{
     }
 
     @Override
-    protected JsonObject Serialize() {
-        JsonObject jsonObject = super.Serialize();
+    protected JsonObject serialize() {
+        JsonObject jsonObject = super.serialize();
         jsonObject.addProperty("playerName", playerName);
         jsonObject.addProperty("data", data);
         return jsonObject;
     }
 
-    public static LoadDataMessage Deserialize(JsonObject json) {
+    public static LoadDataMessage deserialize(JsonObject json) {
         String playerName = json.get("playerName").getAsString();
         String data = json.get("data").getAsString();
         return new LoadDataMessage(playerName, data);
     }
 
     @Override
-    protected void Handle() {
+    protected void handle() {
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(data, JsonObject.class);
         PlayerDataLoader.pushDataToTransferBuffer(playerName, playerData);

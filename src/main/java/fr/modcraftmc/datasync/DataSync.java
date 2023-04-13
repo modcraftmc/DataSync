@@ -5,6 +5,8 @@ import fr.modcraftmc.datasync.command.DataSyncCommand;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
+import fr.modcraftmc.datasync.networkidentity.PlayersLocation;
+import fr.modcraftmc.datasync.networkidentity.ServerCluster;
 import fr.modcraftmc.datasync.rabbitmq.*;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -24,6 +26,8 @@ import java.util.List;
 public class DataSync {
     public static final String MOD_ID = "datasync";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static final PlayersLocation playersLocation = new PlayersLocation();
+    public static final ServerCluster serverCluster = new ServerCluster();
     public static List<Runnable> onConfigLoad;
     public static String serverName;
 
@@ -31,7 +35,6 @@ public class DataSync {
     public static RabbitmqConnection rabbitmqConnection;
 
     public DataSync(){
-        DataSync.LOGGER.debug("Initializing DataSync");
         onConfigLoad = new ArrayList<>();
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::serverSetup);
@@ -48,9 +51,18 @@ public class DataSync {
         MessageHandler.init();
 
         loadConfig();
+        initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
+        DataSync.LOGGER.info("Main modules initialized");
+    }
+
+    private void initializeNetworkIdentity() {
+        DataSync.LOGGER.debug("Initializing network identity");
+        serverCluster.attach();
+        DataSync.LOGGER.info("Network identity initialized");
     }
 
     public void onServerStop(ServerStoppingEvent event){
+        serverCluster.detach();
     }
 
     public void commandResister(RegisterCommandsEvent event){
@@ -72,6 +84,7 @@ public class DataSync {
             new RabbitmqSubscriber(rabbitmqConnection);
             new RabbitmqDirectPublisher(rabbitmqConnection);
             new RabbitmqDirectSubscriber(rabbitmqConnection);
+            DataSync.LOGGER.debug("Message streams initialized");
         });
     }
 
@@ -90,6 +103,7 @@ public class DataSync {
     public static void loadConfig(){
         ConfigManager.loadConfigFile();
         serverName = ConfigManager.serverName;
+
         onConfigLoad.forEach(Runnable::run);
     }
 }

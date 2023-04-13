@@ -16,6 +16,7 @@ public class DataSyncCommand {
     public DataSyncCommand(CommandDispatcher<CommandSourceStack> dispatcher){
         new RabbitmqTestCommand();
         new SerializerTestCommand();
+        new NetworkCommand();
         register(dispatcher);
     }
 

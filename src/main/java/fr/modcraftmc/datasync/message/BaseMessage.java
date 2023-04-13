@@ -8,15 +8,15 @@ public abstract class BaseMessage {
     BaseMessage(String messageName) {
         this.messageName = messageName;
     }
-    protected JsonObject Serialize() {
+    protected JsonObject serialize() {
         JsonObject jsonObject = new JsonObject();
         jsonObject.addProperty("messageName", messageName);
         return jsonObject;
     }
 
-    public String SerializeToString() {
-        return Serialize().toString();
+    public String serializeToString() {
+        return serialize().toString();
     }
 
-    protected abstract void Handle();
+    protected abstract void handle();
 }

@@ -23,6 +23,7 @@ public class RabbitmqPublisher {
     }
 
     public void publish(String message) throws IOException {
+        DataSync.LOGGER.debug(String.format("Publishing message to %s", References.GLOBAL_EXCHANGE_NAME));
         rabbitmqChannel.basicPublish(References.GLOBAL_EXCHANGE_NAME, "", null, message.getBytes());
     }
 }

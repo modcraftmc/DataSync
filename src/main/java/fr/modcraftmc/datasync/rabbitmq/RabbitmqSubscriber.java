@@ -27,7 +27,7 @@ public class RabbitmqSubscriber {
         String queueName = null;
         try {
             queueName = rabbitmqChannel.queueDeclare().getQueue();
-            rabbitmqChannel.queueBind(queueName, References.DIRECT_EXCHANGE_NAME, "");
+            rabbitmqChannel.queueBind(queueName, References.GLOBAL_EXCHANGE_NAME, "");
             rabbitmqChannel.basicConsume(queueName, true, listener, consumerTag -> {});
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while subscribing to RabbitMQ exchange");

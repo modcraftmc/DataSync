@@ -15,17 +15,10 @@ import top.theillusivec4.curios.api.CuriosCapability;
 import java.io.*;
 import java.util.Objects;
 
-public class SerializerTestCommand {
+public class SerializerTestCommand extends CommandModule{
     private JsonObject playerInfo;
 
-    private LiteralArgumentBuilder<CommandSourceStack> commandTree;
-
-    public SerializerTestCommand(DataSyncCommand dataSyncCommand) {
-        buildCommand();
-        dataSyncCommand.registerCommand(commandTree);
-    }
-
-    public void buildCommand(){
+    protected void buildCommand(){
         commandTree = Commands.literal("test")
                 .then(Commands.literal("saveclearload")
                     .executes(context -> {

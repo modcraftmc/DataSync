@@ -11,6 +11,7 @@ public class DetachServer extends BaseMessage{
 
     public DetachServer(String serverName) {
         super(MESSAGE_NAME);
+        this.serverName = serverName;
     }
 
     @Override
@@ -28,6 +29,6 @@ public class DetachServer extends BaseMessage{
     @Override
     protected void handle() {
         DataSync.serverCluster.removeServer(serverName);
-        DataSync.LOGGER.debug("Server %s have been detached from the network");
+        DataSync.LOGGER.debug(String.format("Server %s have been detached from the network", serverName));
     }
 }

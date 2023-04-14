@@ -17,14 +17,27 @@ public class NetworkCommand extends CommandModule{
                                     findPlayer(context.getSource(), StringArgumentType.getString(context, "player"));
                                     return 1;
                                 }
-                        )));
+                        )))
+                .then(Commands.literal("listPlayers")
+                        .executes(context -> {
+                            listPlayers(context.getSource());
+                            return 1;
+                        }
+                ));
+    }
+
+    private void listPlayers(CommandSourceStack source) {
+        var playersLocations = DataSync.playersLocation.getPlayersLocation();
+        for (var entry : playersLocations.entrySet()){
+            source.sendSuccess(Component.literal(String.format("player %s in server %s", entry.getKey(), entry.getValue().getName())), true);
+        }
     }
 
     private void findPlayer(CommandSourceStack source, String player) {
         var playersLocations = DataSync.playersLocation.getPlayersLocation();
         for (var entry : playersLocations.entrySet()){
             if (entry.getKey().equals(player)){
-                source.sendSuccess(Component.literal(String.format("player %s found in server %s", player, entry.getValue().serverName)), true);
+                source.sendSuccess(Component.literal(String.format("player %s found in server %s", player, entry.getValue().getName())), true);
                 return;
             }
         }

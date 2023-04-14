@@ -2,12 +2,17 @@ package fr.modcraftmc.datasync;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
+import fr.modcraftmc.datasync.command.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
 import fr.modcraftmc.datasync.networkidentity.PlayersLocation;
 import fr.modcraftmc.datasync.networkidentity.ServerCluster;
 import fr.modcraftmc.datasync.rabbitmq.*;
+import net.minecraft.commands.synchronization.ArgumentTypeInfo;
+import net.minecraft.commands.synchronization.ArgumentTypeInfos;
+import net.minecraft.commands.synchronization.SingletonArgumentInfo;
+import net.minecraft.core.Registry;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
@@ -16,8 +21,10 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
+import net.minecraftforge.registries.DeferredRegister;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -34,6 +41,12 @@ public class DataSync {
     public static MongodbConnection mongodbConnection;
     public static RabbitmqConnection rabbitmqConnection;
 
+    public static DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES = DeferredRegister.create(Registry.COMMAND_ARGUMENT_TYPE_REGISTRY, MOD_ID);
+
+    static {
+        DataSync.ARGUMENT_TYPES.register("network_player", () -> ArgumentTypeInfos.registerByClass(NetworkPlayerArgument.class, SingletonArgumentInfo.contextFree(NetworkPlayerArgument::networkPlayer)));
+    }
+
     public DataSync(){
         onConfigLoad = new ArrayList<>();
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
@@ -41,6 +54,8 @@ public class DataSync {
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+
+        ARGUMENT_TYPES.register(modEventBus);
     }
 
     @SubscribeEvent
@@ -105,5 +120,13 @@ public class DataSync {
         serverName = ConfigManager.serverName;
 
         onConfigLoad.forEach(Runnable::run);
+    }
+
+    public static void sendProxy(String message){
+        try {
+            RabbitmqDirectPublisher.instance.publish("proxy", message);
+        } catch (IOException e) {
+            LOGGER.error(String.format("Error while publishing message to rabbitmq cannot send message to proxy : %s", e.getMessage()));
+        }
     }
 }

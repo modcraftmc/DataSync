@@ -15,7 +15,7 @@ public class MessageHandler {
     public static Gson GSON = new Gson();
 
     public static void init(){
-        messageMap.put(TransferMessage.MESSAGE_NAME, TransferMessage::deserialize);
+        messageMap.put(TransferDataMessage.MESSAGE_NAME, TransferDataMessage::deserialize);
         messageMap.put(SaveToDBMessage.MESSAGE_NAME, SaveToDBMessage::deserialize);
         messageMap.put(LoadDataMessage.MESSAGE_NAME, LoadDataMessage::deserialize);
         messageMap.put(AttachServer.MESSAGE_NAME, AttachServer::deserialize);
@@ -23,6 +23,8 @@ public class MessageHandler {
         messageMap.put(DetachServer.MESSAGE_NAME, DetachServer::deserialize);
         messageMap.put(PlayerJoined.MESSAGE_NAME, PlayerJoined::deserialize);
         messageMap.put(PlayerLeaved.MESSAGE_NAME, PlayerLeaved::deserialize);
+        messageMap.put(TransferPlayer.MESSAGE_NAME, TransferPlayer::deserialize);
+        messageMap.put(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
 
         DataSync.onConfigLoad.add(() -> {
             RabbitmqDirectSubscriber.instance.subscribe(DataSync.serverName, (consumerTag, message) -> {

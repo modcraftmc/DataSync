@@ -3,17 +3,19 @@ package fr.modcraftmc.datasync.networkidentity;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.message.MessageSender;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
-import fr.modcraftmc.datasync.rabbitmq.RabbitmqPublisher;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public class SyncServer implements MessageSender {
-    public final String serverName;
-
+    private final String serverName;
+    private final List<String> players;
 
     public SyncServer(String serverName) {
         this.serverName = serverName;
+        players = new ArrayList<>();
     }
 
     @Override
@@ -23,5 +25,22 @@ public class SyncServer implements MessageSender {
         } catch (IOException e) {
             DataSync.LOGGER.error(String.format("Error while publishing message to rabbitmq cannot send message to server %s : %s", serverName, e.getMessage()));
         }
+    }
+
+    public void addPlayer(String playerName){
+        if(!players.contains(playerName))
+            players.add(playerName);
+    }
+
+    public void removePlayer(String playerName){
+        players.remove(playerName);
+    }
+
+    public String getName() {
+        return serverName;
+    }
+
+    public List<String> getPlayers() {
+        return players;
     }
 }

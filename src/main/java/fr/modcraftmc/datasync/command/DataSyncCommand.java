@@ -17,6 +17,7 @@ public class DataSyncCommand {
         new RabbitmqTestCommand();
         new SerializerTestCommand();
         new NetworkCommand();
+        new TpCommand();
         register(dispatcher);
     }
 

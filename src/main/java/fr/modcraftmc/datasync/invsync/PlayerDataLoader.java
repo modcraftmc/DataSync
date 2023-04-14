@@ -38,11 +38,6 @@ public class PlayerDataLoader {
     }
 
     @SubscribeEvent
-    public static void onPlayerLeave(PlayerEvent.PlayerLoggedOutEvent event){
-        saveDataToDatabase(event.getEntity());
-    }
-
-    @SubscribeEvent
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
         saveDataToDatabase(event.getEntity());
     }

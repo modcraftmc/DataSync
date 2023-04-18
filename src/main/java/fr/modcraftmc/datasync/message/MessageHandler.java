@@ -25,6 +25,7 @@ public class MessageHandler {
         messageMap.put(PlayerLeaved.MESSAGE_NAME, PlayerLeaved::deserialize);
         messageMap.put(TransferPlayer.MESSAGE_NAME, TransferPlayer::deserialize);
         messageMap.put(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
+        messageMap.put(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
 
         DataSync.onConfigLoad.add(() -> {
             RabbitmqDirectSubscriber.instance.subscribe(DataSync.serverName, (consumerTag, message) -> {

@@ -18,6 +18,7 @@ public class DataSyncCommand {
         new SerializerTestCommand();
         new NetworkCommand();
         new TpCommand();
+        new TpaCommand();
         register(dispatcher);
     }
 
@@ -30,5 +31,6 @@ public class DataSyncCommand {
             return 1;
         }));
         dispatcher.register(commandTree);
+        CommandModule.ROOT_COMMANDS.forEach(dispatcher::register);
     }
 }

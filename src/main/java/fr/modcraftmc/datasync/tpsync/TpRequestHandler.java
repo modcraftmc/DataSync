@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.tpsync;
 
 import fr.modcraftmc.datasync.DataSync;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
@@ -20,7 +19,7 @@ public class TpRequestHandler {
     private static final List<TpRequest> tpRequestsBuffer = new ArrayList<>();
     public static final int tpTimeout = 20; //time in second before tp request expire
 
-    public static void handleTpRequest(TpRequest tpRequest){
+    public static void handle(TpRequest tpRequest){
         DataSync.LOGGER.debug("Handling tp request from " + tpRequest.getPlayerSourceName() + " to " + tpRequest.getPlayerTargetName());
         String playerSourceName = tpRequest.getPlayerSourceName();
         if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName) != null){

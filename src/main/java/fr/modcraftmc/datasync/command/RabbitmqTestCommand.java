@@ -8,7 +8,7 @@ import net.minecraft.network.chat.Component;
 
 public class RabbitmqTestCommand extends CommandModule {
     protected void buildCommand() {
-        commandTree = Commands.literal("rabbitmq")
+        COMMANDS.add(Commands.literal("rabbitmq")
                 .then(Commands.literal("send")
                         .executes(context -> {
                             send(context.getSource());
@@ -18,7 +18,7 @@ public class RabbitmqTestCommand extends CommandModule {
                         .executes(context -> {
                             receive(context.getSource());
                             return 1;
-                        }));
+                        })));
     }
 
     private void send(CommandSourceStack source) {

@@ -10,7 +10,7 @@ public class NetworkCommand extends CommandModule{
 
     @Override
     protected void buildCommand() {
-        commandTree = Commands.literal("network")
+        COMMANDS.add(Commands.literal("network")
                 .then(Commands.literal("findPlayer")
                         .then(Commands.argument("player", StringArgumentType.word())
                                 .executes(context -> {
@@ -23,7 +23,7 @@ public class NetworkCommand extends CommandModule{
                             listPlayers(context.getSource());
                             return 1;
                         }
-                ));
+                )));
     }
 
     private void listPlayers(CommandSourceStack source) {

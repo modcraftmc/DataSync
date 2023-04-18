@@ -11,7 +11,7 @@ import net.minecraft.network.chat.Component;
 public class TpCommand extends CommandModule{
     @Override
     protected void buildCommand() {
-        commandTree = Commands.literal("tp")
+        COMMANDS.add(Commands.literal("tp")
                 .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
                         .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
                                 .executes(context -> {
@@ -23,7 +23,7 @@ public class TpCommand extends CommandModule{
                             tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target"));
                             return 1;
                         })
-                );
+                ));
     }
 
     private void tp(CommandSourceStack source, String player) {

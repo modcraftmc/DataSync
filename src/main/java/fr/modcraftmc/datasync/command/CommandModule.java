@@ -8,11 +8,10 @@ import java.util.List;
 
 public abstract class CommandModule {
     public static final List<LiteralArgumentBuilder<CommandSourceStack>> COMMANDS = new ArrayList<>();
-    protected LiteralArgumentBuilder<CommandSourceStack> commandTree;
+    public static final List<LiteralArgumentBuilder<CommandSourceStack>> ROOT_COMMANDS = new ArrayList<>();
 
     public CommandModule() {
         buildCommand();
-        COMMANDS.add(commandTree);
     }
 
     protected abstract void buildCommand();

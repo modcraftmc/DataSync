@@ -19,7 +19,7 @@ public class SerializerTestCommand extends CommandModule{
     private JsonObject playerInfo;
 
     protected void buildCommand(){
-        commandTree = Commands.literal("test")
+        COMMANDS.add(Commands.literal("test")
                 .then(Commands.literal("saveclearload")
                     .executes(context -> {
                         savePlayerdata(context.getSource());
@@ -61,7 +61,7 @@ public class SerializerTestCommand extends CommandModule{
                     .executes(context -> {
                         test(context.getSource());
                         return 1;
-                    }));
+                    })));
     }
 
     private void savePlayerdata(CommandSourceStack source){

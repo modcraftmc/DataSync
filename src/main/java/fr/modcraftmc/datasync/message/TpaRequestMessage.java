@@ -1,28 +1,28 @@
 package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.datasync.tpsync.TpRequest;
-import fr.modcraftmc.datasync.tpsync.TpRequestHandler;
+import fr.modcraftmc.datasync.tpsync.TpaRequest;
+import fr.modcraftmc.datasync.tpsync.TpaRequestHandler;
 
-public class TpRequestMessage extends BaseMessage {
-    public static final String MESSAGE_NAME = "TpRequestMessage";
+public class TpaRequestMessage extends BaseMessage{
+    public static final String MESSAGE_NAME = "TpaRequestMessage";
+
     public String playerSourceName;
     public String playerTargetName;
     public int time;
 
-    public TpRequestMessage(TpRequest tpRequest) {
-        this(tpRequest.getPlayerSourceName(), tpRequest.getPlayerTargetName(), tpRequest.getTime());
-    }
-
-    public TpRequestMessage(String playerSourceName, String playerTargetName, int time) {
+    public TpaRequestMessage(String playerSourceName, String playerTargetName, int time) {
         super(MESSAGE_NAME);
         this.playerSourceName = playerSourceName;
         this.playerTargetName = playerTargetName;
         this.time = time;
     }
 
-    @Override
-    protected JsonObject serialize() {
+    public TpaRequestMessage(TpaRequest tpaRequest) {
+        this(tpaRequest.getPlayerSourceName(), tpaRequest.getPlayerTargetName(), tpaRequest.getTime());
+    }
+
+    public JsonObject serialize() {
         JsonObject jsonObject = super.serialize();
         jsonObject.addProperty("playerSourceName", playerSourceName);
         jsonObject.addProperty("playerTargetName", playerTargetName);
@@ -30,19 +30,21 @@ public class TpRequestMessage extends BaseMessage {
         return jsonObject;
     }
 
-    public static TpRequestMessage deserialize(JsonObject json) {
+    public static TpaRequestMessage deserialize(JsonObject json) {
         String playerSourceName = json.get("playerSourceName").getAsString();
         String playerTargetName = json.get("playerTargetName").getAsString();
         int time = json.get("time").getAsInt();
-        return new TpRequestMessage(playerSourceName, playerTargetName, time);
+        return new TpaRequestMessage(playerSourceName, playerTargetName, time);
     }
 
-    public TpRequest getTpRequest() {
-        return new TpRequest(playerSourceName, playerTargetName, time);
+    public TpaRequest getTpaRequest() {
+        return new TpaRequest(playerSourceName, playerTargetName, time);
     }
 
     @Override
     protected void handle() {
-        TpRequestHandler.handle(getTpRequest());
+        TpaRequestHandler.handle(getTpaRequest());
     }
+
+
 }

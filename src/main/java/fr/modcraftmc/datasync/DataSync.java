@@ -64,10 +64,10 @@ public class DataSync {
         DataSync.LOGGER.debug("Initializing main modules");
         initializeDatabaseConnection();
         initializeMessageSystem();
-        initializeFTBSync();
         MessageHandler.init();
         loadConfig();
         initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
+        initializeFTBSync(); // must be after loadConfig because it use mongodb connection
         DataSync.LOGGER.info("Main modules initialized");
     }
 
@@ -118,6 +118,7 @@ public class DataSync {
             if(mongodbConnection != null) mongodbConnection.close();
             mongodbConnection = new MongodbConnection(mongodbConfigData.host, mongodbConfigData.port, mongodbConfigData.username, mongodbConfigData.password, mongodbConfigData.database);
             PlayerDataLoader.databasePlayerData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.PLAYER_DATA_COLLECTION_NAME);
+            FTBSync.databaseTeamsData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.TEAMS_DATA_COLLECTION_NAME);
             DataSync.LOGGER.info("Connected to MongoDB");
         });
     }

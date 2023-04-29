@@ -1,10 +1,15 @@
 package fr.modcraftmc.datasync.ftbsync;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.mongodb.client.MongoCollection;
 import dev.architectury.event.EventResult;
 import dev.ftb.mods.ftblibrary.snbt.SNBTCompoundTag;
 import dev.ftb.mods.ftbquests.FTBQuests;
 import dev.ftb.mods.ftbquests.events.CustomTaskEvent;
 import dev.ftb.mods.ftbquests.events.ObjectCompletedEvent;
+import dev.ftb.mods.ftbquests.events.QuestProgressEventData;
 import dev.ftb.mods.ftbquests.net.SyncQuestsMessage;
 import dev.ftb.mods.ftbquests.net.SyncTeamDataMessage;
 import dev.ftb.mods.ftbquests.quest.*;
@@ -18,6 +23,7 @@ import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import dev.ftb.mods.ftbteams.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.data.*;
 import dev.ftb.mods.ftbteams.event.TeamEvent;
+import dev.ftb.mods.ftbteams.event.TeamManagerEvent;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.References;
 import fr.modcraftmc.datasync.message.SyncQuests;
@@ -31,24 +37,29 @@ import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraftforge.fml.ModList;
 import org.apache.commons.lang3.mutable.MutableInt;
+import org.bson.Document;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
+import java.sql.Timestamp;
 import java.util.Comparator;
+import java.util.Date;
 import java.util.UUID;
 
 public class FTBSync {
     private static boolean FTBTeamsLoaded = false;
     private static boolean FTBQuestsLoaded = false;
+    public static MongoCollection<Document> databaseTeamsData;
 
     public static void init() {
         if(ModList.get().isLoaded(References.FTBTEAMS_MOD_ID)) {
             DataSync.LOGGER.info("FTBTeams is loaded, enabling FTBTeams sync");
             FTBTeamsLoaded = true;
 
+            TeamManagerEvent.CREATED.register((event) -> loadTeams());
             TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
             TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
             TeamEvent.PLAYER_CHANGED.register((event) -> {
@@ -78,19 +89,26 @@ public class FTBSync {
     public static void syncTeam(Team team) {
         if(!FTBTeamsLoaded) return;
         DataSync.LOGGER.debug(String.format("Syncing team: %s", team.getDisplayName()));
-        CompoundTag teamsData = FTBTeamsAPI.getManager().getTeamByID(team.getId()).serializeNBT();
-        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData));
+        try{
+            CompoundTag teamsData = FTBTeamsAPI.getManager().getTeamByID(team.getId()).serializeNBT();
+            SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData));
 
-        DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
+            DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
+        } catch (Exception e){
+            DataSync.LOGGER.error(String.format("Error while syncing team: %s", team.getDisplayName()));
+        }
+
+        saveTeamToDB(team);
     }
 
     public static void removeTeam(Team team){
         if(!FTBTeamsLoaded) return;
         DataSync.LOGGER.debug(String.format("Removing team: %s", team.getDisplayName()));
-        CompoundTag teamsData = FTBTeamsAPI.getManager().getTeamByID(team.getId()).serializeNBT();
-        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData), true);
+        CompoundTag teamsData = team.serializeNBT();
+        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().m_7912_(), SerializationUtil.ToJsonElement(teamsData), true);
 
         DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
+        removeTeamFromDB(team);
     }
 
     public static void handleTeamSync(SyncTeams syncQuestsMessage){
@@ -139,6 +157,47 @@ public class FTBSync {
         FTBTeamsAPI.getManager().syncTeamsToAll(team);
     }
 
+    public static void saveTeamsToDB(){
+        if(!FTBTeamsLoaded) return;
+        DataSync.LOGGER.debug("Saving teams");
+        FTBTeamsAPI.getManager().getTeams().forEach(team -> saveTeamToDB(team));
+    }
+
+    public static void saveTeamToDB(Team team){
+        DataSync.LOGGER.debug(String.format("Saving team: %s", team.getDisplayName()));
+        JsonObject teamData = SerializationUtil.ToJsonElement(team.serializeNBT()).getAsJsonObject();
+        Date date = new Date();
+        String uuid = team.getId().toString();
+        Document document = new Document("uuid", uuid)
+                .append("name", team.getDisplayName())
+                .append("lastUpdated", new Timestamp(date.getTime()).toString())
+                .append("teamData", teamData.toString());
+        databaseTeamsData.deleteMany(new Document("uuid", uuid));
+        if(!databaseTeamsData.insertOne(document).wasAcknowledged()){
+            DataSync.LOGGER.error(String.format("Error while saving data for team %s", team.getDisplayName()));
+        }
+
+    }
+
+    public static void removeTeamFromDB(Team team) {
+        if(!FTBTeamsLoaded) return;
+        DataSync.LOGGER.debug("Removing teams");
+        databaseTeamsData.deleteOne(new Document("uuid", team.getId().toString()));
+    }
+
+    public static void loadTeams(){
+        Gson gson = new Gson();
+        databaseTeamsData.find().forEach(data -> {
+            JsonElement teamData = gson.fromJson(data.getString("teamData"), JsonElement.class);
+            CompoundTag teamCompound = SerializationUtil.GetNbt(teamData);
+            Team team = FTBTeamsAPI.getManager().getTeamByID(UUID.fromString(teamCompound.getString("id")));
+            if(team == null) {
+                team = getNewTeam(teamCompound.getString("type"), teamCompound.getString("id"));
+            }
+            team.deserializeNBT(teamCompound);
+        });
+    }
+
     public static void syncTeamQuests(TeamData team) {
         if(!FTBQuestsLoaded) return;
         DataSync.LOGGER.debug(String.format("Syncing quests for team: %s", team.name));
@@ -180,7 +239,13 @@ public class FTBSync {
 
     private static Team getNewTeam(String teamType, String id){
         Team team;
-        TeamType type = TeamType.valueOf(teamType);
+        TeamType type = null;
+        switch (teamType){
+            case "party", "PARTY" -> type = TeamType.PARTY;
+            case "server", "SERVER" -> type = TeamType.SERVER;
+            case "player", "PLAYER" -> type = TeamType.PLAYER;
+            default -> DataSync.LOGGER.error(String.format("Unknown team type: %s", teamType));
+        }
         UUID teamId = UUID.fromString(id);
 
         switch (type){

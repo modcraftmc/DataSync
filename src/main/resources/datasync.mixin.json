@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "fr.modcraftmc.datasync.mixins",
+  "compatibilityLevel": "JAVA_17",
+  "server": [
+    "MixinCreateObjectMessage"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "datasync.mixin-refmap.json",
+  "minVersion": "0.8"
+}

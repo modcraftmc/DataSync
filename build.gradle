@@ -1,3 +1,12 @@
+buildscript {
+    repositories {
+        maven { url = 'https://repo.spongepowered.org/maven' }
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7.+'
+    }
+}
+
 
 plugins {
     id 'eclipse'
@@ -7,6 +16,7 @@ plugins {
 }
 
 apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'org.spongepowered.mixin'
 
 version = "${mc_version}-${mod_version}"
 group = 'com.yourname.modid' // http://maven.apache.org/guides/mini/guide-naming-conventions.html
@@ -172,6 +182,9 @@ dependencies {
 
     // Examples using mod jars from ./libs
     // implementation fg.deobf("blank:coolmod-${mc_version}:${coolmod_version}")
+
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}")
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
     implementation("dev.architectury:architectury-forge:${architectury_version}"){transitive = false}
@@ -223,9 +236,14 @@ jar {
                 "Implementation-Title"    : project.name,
                 "Implementation-Version"  : project.jar.archiveVersion,
                 "Implementation-Vendor"   : "ModcraftMC",
-                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+                "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                "TweakClass"              : "org.spongepowered.asm.launch.MixinTweaker",
+                "TweakOrder"              : "0",
+                "MixinConfigs"            : "datasync.mixin.json"
         ])
     }
+
+    rename 'mixin.refmap.json', 'datasync.mixin-refmap.json'
 }
 
 

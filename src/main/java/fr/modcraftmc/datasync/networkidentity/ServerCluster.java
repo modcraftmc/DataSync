@@ -58,6 +58,13 @@ public class ServerCluster implements MessageSender {
         }
     }
 
+    public void sendMessageExceptCurrent(String message) {
+        for (SyncServer server : servers) {
+            if(!server.getName().equals(DataSync.serverName))
+                server.sendMessage(message);
+        }
+    }
+
     public void removeServer(String serverName) {
         servers.removeIf(server -> server.getName().equals(serverName));
     }

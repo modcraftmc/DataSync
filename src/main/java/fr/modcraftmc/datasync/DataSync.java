@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync;
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
 import fr.modcraftmc.datasync.command.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.datasync.ftbsync.FTBSync;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
@@ -63,11 +64,17 @@ public class DataSync {
         DataSync.LOGGER.debug("Initializing main modules");
         initializeDatabaseConnection();
         initializeMessageSystem();
+        initializeFTBSync();
         MessageHandler.init();
-
         loadConfig();
         initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
         DataSync.LOGGER.info("Main modules initialized");
+    }
+
+    private void initializeFTBSync() {
+        DataSync.LOGGER.debug("Initializing FTBSync");
+        FTBSync.init();
+        DataSync.LOGGER.info("FTBSync initialized");
     }
 
     private void initializeNetworkIdentity() {

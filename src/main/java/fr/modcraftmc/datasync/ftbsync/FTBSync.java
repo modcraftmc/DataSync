@@ -90,7 +90,7 @@ public class FTBSync {
         if(!FTBTeamsLoaded) return;
         DataSync.LOGGER.debug(String.format("Syncing team: %s", team.getDisplayName()));
         try{
-            CompoundTag teamsData = FTBTeamsAPI.getManager().getTeamByID(team.getId()).serializeNBT();
+            CompoundTag teamsData = team.serializeNBT();
             SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData));
 
             DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());

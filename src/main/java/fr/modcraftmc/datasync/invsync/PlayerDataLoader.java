@@ -7,8 +7,8 @@ import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.serialization.PlayerSerializer;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.eventbus.api.EventPriority;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
@@ -24,9 +24,9 @@ public class PlayerDataLoader {
     private static Map<String, JsonObject> playerData = new HashMap<>();
     public static MongoCollection<Document> databasePlayerData;
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
-        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(event.getEntity().getName().getString());
+        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         String playerName = player.getName().getString();
 
         if (loadDataFromTransferBuffer(player, playerName)) return;
@@ -39,7 +39,8 @@ public class PlayerDataLoader {
 
     @SubscribeEvent
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
-        saveDataToDatabase(event.getEntity());
+        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
+        saveDataToDatabase(player);
     }
 
     private static boolean loadDataFromDatabase(ServerPlayer player, String playerName) {
@@ -53,7 +54,7 @@ public class PlayerDataLoader {
 
     }
 
-    public static void saveDataToDatabase(Player player) {
+    public static void saveDataToDatabase(ServerPlayer player) {
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Date date = new Date();
         Document document = new Document("name", player.getName().getString())

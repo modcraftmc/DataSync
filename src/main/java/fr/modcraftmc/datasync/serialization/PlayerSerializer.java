@@ -6,21 +6,30 @@ import fr.modcraftmc.datasync.References;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
-import net.minecraft.server.dedicated.DedicatedPlayerList;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import top.theillusivec4.curios.api.CuriosCapability;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class PlayerSerializer {
     public static final String PLAYER_DATA_IDENTIFIER = "playerData";
     public static final String CURIOS_INVENTORY_IDENTIFIER = "curiosInventory";
 
-    public static JsonObject serializePlayer(Player player){
+    public static JsonObject serializePlayer(ServerPlayer player){
         JsonObject jsonObject = new JsonObject();
 
         savePlayerInventory(player, jsonObject);
         savePlayerCurios(player, jsonObject);
+        savePlayerAdvancements(player, jsonObject);
 
         return jsonObject;
     }
@@ -45,7 +54,29 @@ public class PlayerSerializer {
         }
     }
 
+    public static void savePlayerAdvancements(ServerPlayer player, JsonObject jsonObject){
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+
+        JsonArray advancementsArray = new JsonArray();
+        server.getAdvancements().getAllAdvancements().forEach(advancement -> {
+            JsonArray criteriaArray = new JsonArray();
+            server.getPlayerList().getPlayerAdvancements(player).getOrStartProgress(advancement).getCompletedCriteria().forEach(criterion -> {
+                criteriaArray.add(criterion);
+            });
+            if(criteriaArray.size() == 0) return;
+
+            JsonObject advancementObject = new JsonObject();
+            advancementObject.addProperty("advancement", advancement.getId().toString());
+            advancementObject.add("criteria", criteriaArray);
+
+            advancementsArray.add(advancementObject);
+        });
+
+        jsonObject.add("advancements", advancementsArray);
+    }
+
     public static void deserializePlayer(JsonObject jsonObject, ServerPlayer player){
+        loadPlayerAdvancements(jsonObject, player);
         loadPlayerCurios(jsonObject, player);
         loadPlayerInventory(jsonObject, player);
     }
@@ -71,5 +102,41 @@ public class PlayerSerializer {
                 });
             }
         }
+    }
+
+    public static void loadPlayerAdvancements(JsonObject jsonObject, ServerPlayer player){
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        JsonArray advancementsArray = jsonObject.getAsJsonArray("advancements");
+        Map<ResourceLocation, List<String>> completedAdvancements = new HashMap<>();
+        if(advancementsArray == null) return;
+        advancementsArray.forEach(advancementElement -> {
+            JsonObject advancementJson = advancementElement.getAsJsonObject();
+            List<String> completedCriteria = new ArrayList<>();
+
+            JsonArray criteriaArray = advancementJson.getAsJsonArray("criteria");
+            criteriaArray.forEach(criterionElement -> {
+                completedCriteria.add(criterionElement.getAsString());
+            });
+
+            completedAdvancements.put(new ResourceLocation(advancementJson.get("advancement").getAsString()), completedCriteria);
+        });
+
+        PlayerAdvancements playerAdvancements = server.getPlayerList().getPlayerAdvancements(player);
+        server.getAdvancements().getAllAdvancements().forEach(advancement -> {
+            playerAdvancements.getOrStartProgress(advancement).getCompletedCriteria().forEach(criterion -> {
+                if(!completedAdvancements.containsKey(advancement.getId()) || !completedAdvancements.get(advancement.getId()).contains(criterion)) {
+                    playerAdvancements.getOrStartProgress(advancement).getCriterion(criterion).revoke();
+                }
+            });
+            if(completedAdvancements.containsKey(advancement.getId())){
+                playerAdvancements.getOrStartProgress(advancement).getRemainingCriteria().forEach(criterion -> {
+                    if(completedAdvancements.get(advancement.getId()).contains(criterion)) {
+                        playerAdvancements.getOrStartProgress(advancement).getCriterion(criterion).grant();
+                    }
+                });
+            }
+        });
+
+        playerAdvancements.ensureAllVisible();
     }
 }

@@ -6,7 +6,7 @@ import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
 import fr.modcraftmc.datasync.serialization.PlayerSerializer;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.io.IOException;
@@ -39,7 +39,7 @@ public class TransferDataMessage extends BaseMessage {
     protected void handle() {
         if(!areLinked) return;
 
-        Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
+        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Gson gson = new Gson();
         JsonObject messageData = new LoadDataMessage(playerName, gson.toJson(playerData)).serialize();

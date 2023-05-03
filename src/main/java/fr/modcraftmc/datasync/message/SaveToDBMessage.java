@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.message;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
-import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class SaveToDBMessage extends BaseMessage {
@@ -33,7 +33,7 @@ public class SaveToDBMessage extends BaseMessage {
     @Override
     protected void handle() {
         DataSync.LOGGER.info("Saving player %s data to database: " + playerName);
-        Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
+        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
 
         PlayerDataLoader.saveDataToDatabase(player);
     }

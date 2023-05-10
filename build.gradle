@@ -190,6 +190,7 @@ shadowJar {
     configurations = [project.configurations.shade]
     classifier = 'shade'
     relocate 'org.mongodb.mongodb-driver-sync', 'shaded.mongodb-driver-sync'
+    relocate 'com.moandjiezana.toml', 'shaded.toml'
     dependencies {
         exclude(dependency('org.slf4j:slf4j-api'))
         exclude(dependency('com.google.code.gson:gson'))

@@ -200,6 +200,11 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 }
 
+//mixin {
+//    add sourceSets.main, 'datasync.mixin.json'
+//
+//}
+
 // Configure all runs with the following
 minecraft.runs.all {
     // Set the minecraft_classpath token to the paths of all jars in the library configuration
@@ -213,6 +218,7 @@ shadowJar {
     configurations = [project.configurations.shade]
     classifier = 'shade'
     relocate 'org.mongodb.mongodb-driver-sync', 'shaded.mongodb-driver-sync'
+    relocate 'com.moandjiezana.toml', 'shaded.toml'
     dependencies {
         exclude(dependency('org.slf4j:slf4j-api'))
         exclude(dependency('com.google.code.gson:gson'))
@@ -243,7 +249,7 @@ jar {
         ])
     }
 
-    rename 'mixin.refmap.json', 'datasync.mixin-refmap.json'
+    //rename 'mixin.refmap.json', 'datasync.mixin-refmap.json'
 }
 
 

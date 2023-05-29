@@ -3,11 +3,12 @@
   "package": "fr.modcraftmc.datasync.mixins",
   "compatibilityLevel": "JAVA_17",
   "server": [
-    "MixinCreateObjectMessage"
+    "MixinCreateObjectMessage",
+    "MixinClaimRewardMessage"
   ],
   "injectors": {
     "defaultRequire": 1
   },
-  "refmap": "datasync.mixin-refmap.json",
+  "refmap": "mixins.datasync.refmap.json",
   "minVersion": "0.8"
 }

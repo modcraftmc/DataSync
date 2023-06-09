@@ -1,8 +1,10 @@
 package fr.modcraftmc.datasync.networkidentity;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import jdk.jfr.Event;
+
+import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public class PlayersLocation {
     private final Map<String, SyncServer> playersLocation;
@@ -15,6 +17,9 @@ public class PlayersLocation {
         return playersLocation;
     }
 
+    public List<BiConsumer<String, SyncServer>> playerJoinedEvent = new ArrayList<>();
+    public List<BiConsumer<String, SyncServer>> playerLeavedEvent = new ArrayList<>();
+
     public void setPlayerLocation(String player, SyncServer location) {
         if(playersLocation.containsKey(player)) {
             playersLocation.get(player).removePlayer(player);
@@ -25,12 +30,16 @@ public class PlayersLocation {
             this.playersLocation.put(player, location);
             location.addPlayer(player);
         }
+
+        playerJoinedEvent.forEach(event -> event.accept(player, location));
     }
 
     public void removePlayer(String player) {
         if(playersLocation.containsKey(player)){
-            playersLocation.get(player).removePlayer(player);
+            SyncServer server = playersLocation.get(player);
+            server.removePlayer(player);
             this.playersLocation.remove(player);
+            playerLeavedEvent.forEach(event -> event.accept(player, server));
         }
     }
 

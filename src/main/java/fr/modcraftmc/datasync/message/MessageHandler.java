@@ -27,6 +27,8 @@ public class MessageHandler {
         messageMap.put(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
         messageMap.put(SyncTeams.MESSAGE_NAME, SyncTeams::deserialize);
         messageMap.put(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
+        messageMap.put(SyncTeamMessage.MESSAGE_NAME, SyncTeamMessage::deserialize);
+        messageMap.put(SyncQuests.MESSAGE_NAME, SyncQuests::deserialize);
 
         DataSync.onConfigLoad.add(() -> {
             RabbitmqDirectSubscriber.instance.subscribe(DataSync.serverName, (consumerTag, message) -> {

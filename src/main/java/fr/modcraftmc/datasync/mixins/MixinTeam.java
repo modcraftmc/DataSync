@@ -1,5 +1,6 @@
 package fr.modcraftmc.datasync.mixins;
 
+import dev.ftb.mods.ftbteams.data.Team;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.ftbsync.FTBSync;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,13 +19,14 @@ import java.util.UUID;
 public class MixinTeam {
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManager;syncTeamsToAll([Ldev/ftb/mods/ftbteams/data/Team;)V") , method = "denyInvite")
     protected void onDenyInvite(CommandSourceStack source, CallbackInfoReturnable<Integer> cir){
-        DataSync.LOGGER.debug("received Team denyInvite");
+        DataSync.LOGGER.info("received Team denyInvite");
         FTBSync.syncTeam((dev.ftb.mods.ftbteams.data.Team) (Object) this);
     }
 
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/Team;getOnlineMembers()Ljava/util/List;") , method = "sendMessage")
     protected void onSendMessage(UUID from, Component text, CallbackInfo ci){
-        DataSync.LOGGER.debug("received Team sendMessage");
-        FTBSync.syncTeam((dev.ftb.mods.ftbteams.data.Team) (Object) this);
+        DataSync.LOGGER.info("received Team sendMessage");
+        Team team = (Team) (Object) this;
+        FTBSync.syncTeamMessage(team.getId(), from, text);
     }
 }

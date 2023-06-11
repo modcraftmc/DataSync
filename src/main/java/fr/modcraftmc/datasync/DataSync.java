@@ -8,13 +8,17 @@ import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
 import fr.modcraftmc.datasync.networkidentity.PlayersLocation;
 import fr.modcraftmc.datasync.networkidentity.ServerCluster;
+import fr.modcraftmc.datasync.networking.Network;
+import fr.modcraftmc.datasync.networking.packets.PacketUpdateClusterPlayers;
 import fr.modcraftmc.datasync.rabbitmq.*;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
 import net.minecraft.core.Registry;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -33,18 +37,26 @@ import java.util.List;
 public class DataSync {
     public static final String MOD_ID = "datasync";
     public static final Logger LOGGER = LogUtils.getLogger();
-    public static final PlayersLocation playersLocation = new PlayersLocation();
-    public static final ServerCluster serverCluster = new ServerCluster();
+
+    // Client side
+    public static List<String> playersOnCluster;
+
+    // Server side
     public static List<Runnable> onConfigLoad;
     public static String serverName;
+
+    public static final PlayersLocation playersLocation = new PlayersLocation();
+    public static final ServerCluster serverCluster = new ServerCluster();
 
     public static MongodbConnection mongodbConnection;
     public static RabbitmqConnection rabbitmqConnection;
 
+    // Both side
+    public static final Network network = new Network();
     public static DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES = DeferredRegister.create(Registry.COMMAND_ARGUMENT_TYPE_REGISTRY, MOD_ID);
 
     static {
-        DataSync.ARGUMENT_TYPES.register("network_player", () -> ArgumentTypeInfos.registerByClass(NetworkPlayerArgument.class, SingletonArgumentInfo.contextFree(NetworkPlayerArgument::networkPlayer)));
+        DataSync.ARGUMENT_TYPES.register("network_player", () -> ArgumentTypeInfos.registerByClass(NetworkPlayerArgument.class, SingletonArgumentInfo.contextFree(NetworkPlayerArgument::new)));
     }
 
     public DataSync(){
@@ -54,8 +66,10 @@ public class DataSync {
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
         MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+        MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoin);
 
         ARGUMENT_TYPES.register(modEventBus);
+        network.Init();
     }
 
     @SubscribeEvent
@@ -128,5 +142,15 @@ public class DataSync {
         } catch (IOException e) {
             LOGGER.error(String.format("Error while publishing message to rabbitmq cannot send message to proxy : %s", e.getMessage()));
         }
+    }
+
+    public static void updatePlayersLocationToClients(){
+        PacketUpdateClusterPlayers packetUpdateClusterPlayers = new PacketUpdateClusterPlayers(playersLocation.getAllPlayers());
+        network.sendToAllPlayers(packetUpdateClusterPlayers);
+    }
+
+    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
+        PacketUpdateClusterPlayers packetUpdateClusterPlayers = new PacketUpdateClusterPlayers(playersLocation.getAllPlayers());
+        network.sendTo(packetUpdateClusterPlayers, (ServerPlayer) event.getEntity());
     }
 }

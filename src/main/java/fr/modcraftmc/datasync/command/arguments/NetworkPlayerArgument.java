@@ -15,11 +15,14 @@ import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.network.FriendlyByteBuf;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public class NetworkPlayerArgument implements ArgumentType<String> {
+    public NetworkPlayerArgument() {
+    }
 
     public static NetworkPlayerArgument networkPlayer() {
         return new NetworkPlayerArgument();
@@ -36,7 +39,9 @@ public class NetworkPlayerArgument implements ArgumentType<String> {
 
     @Override
     public <S> CompletableFuture<Suggestions> listSuggestions(CommandContext<S> context, SuggestionsBuilder builder) {
-        return SharedSuggestionProvider.suggest(DataSync.serverCluster.getPlayers(), builder);
+        if(DataSync.playersOnCluster == null)
+            return Suggestions.empty();
+        return context.getSource() instanceof SharedSuggestionProvider ? SharedSuggestionProvider.suggest(DataSync.playersOnCluster, builder) : Suggestions.empty();
     }
 
     @Override

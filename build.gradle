@@ -1,6 +1,6 @@
-buildscript {
-    apply from: 'special.gradle'
-}
+//buildscript {
+//    apply from: 'special.gradle'
+//}
 
 plugins {
     id 'eclipse'

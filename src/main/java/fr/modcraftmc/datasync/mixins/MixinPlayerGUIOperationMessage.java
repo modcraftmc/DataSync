@@ -7,9 +7,12 @@ import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamRank;
 import dev.ftb.mods.ftbteams.net.PlayerGUIOperationMessage;
 import fr.modcraftmc.datasync.DataSync;
+import fr.modcraftmc.datasync.message.SendMessageMessage;
 import fr.modcraftmc.datasync.networkidentity.SyncServer;
 import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,6 +37,16 @@ public class MixinPlayerGUIOperationMessage
             if(gameProfile.isPresent()) {
                 try {
                     partyTeam.invite(sourcePlayer, List.of(gameProfile.get()));
+                    new SendMessageMessage(Component.translatable("ftbteams.message.invite_sent", sourcePlayer.getName().copy().withStyle(ChatFormatting.YELLOW)), playerInvited).send();
+                    Component acceptButton = Component.translatable("ftbteams.accept")
+                            .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(
+                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + partyTeam.getStringID()))
+                            );
+                    Component declineButton = Component.translatable("ftbteams.decline")
+                            .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(
+                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + partyTeam.getStringID()))
+                            );
+                    new SendMessageMessage(Component.literal("[").append(acceptButton).append("] [").append(declineButton).append("]"), playerInvited).send();
                 } catch (CommandSyntaxException e) {
                     sourcePlayer.displayClientMessage(Component.literal(e.getMessage()).withStyle(ChatFormatting.RED), false);
                 }

@@ -5,7 +5,7 @@ import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.ftbsync.FTBSync;
 
 public class SyncTeamQuests extends BaseMessage {
-    public static final String MESSAGE_NAME = "SyncQuests";
+    public static final String MESSAGE_NAME = "SyncTeamQuests";
     public String teamUUID;
     public JsonElement questsData;
 

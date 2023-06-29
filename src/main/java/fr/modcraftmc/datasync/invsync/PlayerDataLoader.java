@@ -19,12 +19,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-@Mod.EventBusSubscriber(modid = DataSync.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class PlayerDataLoader {
     private static Map<String, JsonObject> playerData = new HashMap<>();
     public static MongoCollection<Document> databasePlayerData;
 
-    @SubscribeEvent
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(event.getEntity().getName().getString());
         String playerName = player.getName().getString();
@@ -37,7 +35,6 @@ public class PlayerDataLoader {
         player.connection.disconnect(Component.literal("No data found for you in database, please contact an administrator"));
     }
 
-    @SubscribeEvent
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
         saveDataToDatabase(event.getEntity());
     }

@@ -49,18 +49,24 @@ public class DataSync {
     }
 
     public DataSync(){
+        DataSync.LOGGER.info("DataSync's here !");
         onConfigLoad = new ArrayList<>();
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::serverSetup);
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+
+
 
         ARGUMENT_TYPES.register(modEventBus);
     }
 
     @SubscribeEvent
     public void serverSetup(FMLDedicatedServerSetupEvent event){
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerJoined);
+        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerSave);
+
         DataSync.LOGGER.debug("Initializing main modules");
         initializeDatabaseConnection();
         initializeMessageSystem();

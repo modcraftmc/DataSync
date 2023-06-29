@@ -1,20 +1,19 @@
 package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.datasync.tpsync.TpRequest;
 import fr.modcraftmc.datasync.tpsync.TpRequestHandler;
 
-public class TpRequestMessage extends BaseMessage {
+public class TpRequest extends BaseMessage {
     public static final String MESSAGE_NAME = "TpRequestMessage";
     public String playerSourceName;
     public String playerTargetName;
     public int time;
 
-    public TpRequestMessage(TpRequest tpRequest) {
+    public TpRequest(fr.modcraftmc.datasync.tpsync.TpRequest tpRequest) {
         this(tpRequest.getPlayerSourceName(), tpRequest.getPlayerTargetName(), tpRequest.getTime());
     }
 
-    public TpRequestMessage(String playerSourceName, String playerTargetName, int time) {
+    public TpRequest(String playerSourceName, String playerTargetName, int time) {
         super(MESSAGE_NAME);
         this.playerSourceName = playerSourceName;
         this.playerTargetName = playerTargetName;
@@ -30,15 +29,15 @@ public class TpRequestMessage extends BaseMessage {
         return jsonObject;
     }
 
-    public static TpRequestMessage deserialize(JsonObject json) {
+    public static TpRequest deserialize(JsonObject json) {
         String playerSourceName = json.get("playerSourceName").getAsString();
         String playerTargetName = json.get("playerTargetName").getAsString();
         int time = json.get("time").getAsInt();
-        return new TpRequestMessage(playerSourceName, playerTargetName, time);
+        return new TpRequest(playerSourceName, playerTargetName, time);
     }
 
-    public TpRequest getTpRequest() {
-        return new TpRequest(playerSourceName, playerTargetName, time);
+    public fr.modcraftmc.datasync.tpsync.TpRequest getTpRequest() {
+        return new fr.modcraftmc.datasync.tpsync.TpRequest(playerSourceName, playerTargetName, time);
     }
 
     @Override

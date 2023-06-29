@@ -7,13 +7,13 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
-public class SendMessageMessage extends BaseMessage {
+public class SendMessage extends BaseMessage {
     public static String MESSAGE_NAME = "SendMessage";
 
     public Component message;
     public String playerName;
 
-    public SendMessageMessage(Component message, String playerName) {
+    public SendMessage(Component message, String playerName) {
         super(MESSAGE_NAME);
         this.message = message;
         this.playerName = playerName;
@@ -26,10 +26,10 @@ public class SendMessageMessage extends BaseMessage {
         return json;
     }
 
-    public static SendMessageMessage deserialize(JsonObject json) {
+    public static SendMessage deserialize(JsonObject json) {
         Component message = Component.Serializer.fromJson(json.get("message").getAsString());
         String playerName = json.get("playerName").getAsString();
-        return new SendMessageMessage(message, playerName);
+        return new SendMessage(message, playerName);
     }
 
     public void send(){

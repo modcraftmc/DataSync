@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.authlib.GameProfile;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mongodb.client.MongoCollection;
 import dev.architectury.event.EventResult;
 import dev.ftb.mods.ftblibrary.snbt.SNBTCompoundTag;
@@ -29,18 +30,19 @@ import dev.ftb.mods.ftbteams.net.SendMessageResponseMessage;
 import dev.ftb.mods.ftbteams.net.SyncMessageHistoryMessage;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.References;
-import fr.modcraftmc.datasync.message.SyncQuests;
-import fr.modcraftmc.datasync.message.SyncTeamMessage;
-import fr.modcraftmc.datasync.message.SyncTeamQuests;
-import fr.modcraftmc.datasync.message.SyncTeams;
+import fr.modcraftmc.datasync.message.*;
+import fr.modcraftmc.datasync.networkidentity.SyncServer;
 import fr.modcraftmc.datasync.serialization.SerializationUtil;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.ChatFormatting;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
+import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.players.GameProfileCache;
 import net.minecraftforge.fml.ModList;
@@ -55,10 +57,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.sql.Timestamp;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.UUID;
+import java.util.*;
 
 public class FTBSync {
     public static boolean FTBTeamsLoaded = false;
@@ -87,6 +86,7 @@ public class FTBSync {
                     if(playerTeam.playerName.equals(playerName)){
                         DataSync.LOGGER.debug(String.format("player team of %s set online", playerName));
                         playerTeam.online = true;
+                        playerTeam.updatePresence();
                     }
                 });
             });
@@ -95,6 +95,7 @@ public class FTBSync {
                     if(playerTeam.playerName.equals(playerName)){
                         DataSync.LOGGER.debug(String.format("player team of %s set offline", playerName));
                         playerTeam.online = false;
+                        playerTeam.updatePresence();
                     }
                 });
             });
@@ -133,7 +134,7 @@ public class FTBSync {
         if(!FTBTeamsLoaded) return;
         DataSync.LOGGER.debug(String.format("Removing team: %s", team.getDisplayName()));
         CompoundTag teamsData = team.serializeNBT();
-        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().m_7912_(), SerializationUtil.ToJsonElement(teamsData), true);
+        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData), true);
 
         DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
         removeTeamFromDB(team);
@@ -179,10 +180,10 @@ public class FTBSync {
             }
         }
 
+        FTBTeamsAPI.getManager().syncTeamsToAll(team);
         if(team.getType() == TeamType.PLAYER) {
             ((PlayerTeam) team).updatePresence();
         }
-        FTBTeamsAPI.getManager().syncTeamsToAll(team);
 //        ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayers().forEach(player -> {
 //            Team playerTeam = FTBTeamsAPI.getPlayerTeam(player.getUUID());
 //            if(finalTeam == playerTeam){
@@ -333,7 +334,6 @@ public class FTBSync {
             DataSync.LOGGER.error("Error while setting team id");
         }
         FTBTeamsAPI.getManager().getTeamMap().put(teamId, team);
-        FTBTeamsAPI.getManager().syncTeamsToAll(team);
         return team;
     }
 
@@ -580,5 +580,32 @@ public class FTBSync {
         }
 
         FTBQuests.LOGGER.info("Loaded " + questFile.chapterGroups.size() + " chapter groups, " + chapterCounter + " chapters, " + questCounter + " quests, " + questFile.rewardTables.size() + " reward tables");
+    }
+
+    public static void inviteInterServer(UUID playerUUID, PartyTeam team, ServerPlayer sourcePlayer){
+        String playerInvited = FTBTeamsAPI.getManager().getInternalPlayerTeam(playerUUID).playerName;
+        Optional<SyncServer> playerLocation = DataSync.playersLocation.getPlayerLocation(playerInvited);
+        if(playerLocation.isPresent() && !playerLocation.get().getName().equals(DataSync.serverName)){
+            Optional<GameProfile> gameProfile = ServerLifecycleHooks.getCurrentServer().getProfileCache().get(playerUUID);
+            if(gameProfile.isPresent()) {
+                try {
+                    team.invite(sourcePlayer, List.of(gameProfile.get()));
+                    new SendMessage(Component.translatable("ftbteams.message.invite_sent", sourcePlayer.getName().copy().withStyle(ChatFormatting.YELLOW)), playerInvited).send();
+                    Component acceptButton = Component.translatable("ftbteams.accept")
+                            .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(
+                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + team.getStringID()))
+                            );
+                    Component declineButton = Component.translatable("ftbteams.decline")
+                            .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(
+                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + team.getStringID()))
+                            );
+                    new SendMessage(Component.literal("[").append(acceptButton).append("] [").append(declineButton).append("]"), playerInvited).send();
+                } catch (CommandSyntaxException e) {
+                    sourcePlayer.displayClientMessage(Component.literal(e.getMessage()).withStyle(ChatFormatting.RED), false);
+                }
+            }
+            else
+                DataSync.LOGGER.error("Could not find GameProfile for player " + playerInvited);
+        }
     }
 }

@@ -187,9 +187,9 @@ dependencies {
 
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}")
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
-    implementation("dev.architectury:architectury-forge:${architectury_version}"){transitive = false}
-    implementation("dev.ftb.mods:ftb-library-forge:${ftb_library_version}"){transitive = false}
-    implementation("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}"){transitive = false}
+    implementation(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")){transitive = false}
+    implementation(fg.deobf("dev.ftb.mods:ftb-library-forge:${ftb_library_version}")){transitive = false}
+    implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
     implementation("dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"){transitive = false}
     shade 'com.moandjiezana.toml:toml4j:0.7.2'
     shade 'com.rabbitmq:amqp-client:5.16.0'

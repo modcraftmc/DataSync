@@ -11,14 +11,14 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.io.IOException;
 
-public class TransferDataMessage extends BaseMessage {
+public class TransferData extends BaseMessage {
     public static final String MESSAGE_NAME = "TransferDataMessage";
     private final String playerName;
     private final String oldServerName;
     private final String newServerName;
     private final boolean areLinked;
 
-    public TransferDataMessage(String playerName, String oldServerName, String newServerName, boolean areLinked) {
+    public TransferData(String playerName, String oldServerName, String newServerName, boolean areLinked) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.oldServerName = oldServerName;
@@ -42,23 +42,19 @@ public class TransferDataMessage extends BaseMessage {
         Player player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName);
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Gson gson = new Gson();
-        JsonObject messageData = new LoadDataMessage(playerName, gson.toJson(playerData)).serialize();
-        String rawMessage = gson.toJson(messageData);
+        String messageData = new LoadData(playerName, gson.toJson(playerData)).serializeToString();
 
-        try {
-            RabbitmqDirectPublisher.instance.publish(newServerName, rawMessage);
-        } catch (IOException e) {
-            DataSync.LOGGER.error(String.format("Error while publishing message to rabbitmq cannot transfer player %s data from %s to %s : %s", playerName, oldServerName, newServerName, e.getMessage()));
-        }
+        DataSync.LOGGER.info("Sending data to " + newServerName + " for player " + playerName);
+        DataSync.serverCluster.getServer(newServerName).sendMessage(messageData);
 
         PlayerDataLoader.saveDataToDatabase(player);
     }
 
-    protected static TransferDataMessage deserialize(JsonObject json) {
+    protected static TransferData deserialize(JsonObject json) {
         String oldServerName = json.get("oldServerName").getAsString();
         String newServerName = json.get("newServerName").getAsString();
         String playerName = json.get("playerName").getAsString();
         boolean areLinked = json.get("areLinked").getAsBoolean();
-        return new TransferDataMessage(playerName, oldServerName, newServerName, areLinked);
+        return new TransferData(playerName, oldServerName, newServerName, areLinked);
     }
 }

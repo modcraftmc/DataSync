@@ -4,13 +4,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 
-public class LoadDataMessage extends BaseMessage{
+public class LoadData extends BaseMessage{
     public static final String MESSAGE_NAME = "LoadDataMessage";
 
     private final String playerName;
     private final String data;
 
-    LoadDataMessage(String playerName, String data) {
+    LoadData(String playerName, String data) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.data = data;
@@ -24,10 +24,10 @@ public class LoadDataMessage extends BaseMessage{
         return jsonObject;
     }
 
-    public static LoadDataMessage deserialize(JsonObject json) {
+    public static LoadData deserialize(JsonObject json) {
         String playerName = json.get("playerName").getAsString();
         String data = json.get("data").getAsString();
-        return new LoadDataMessage(playerName, data);
+        return new LoadData(playerName, data);
     }
 
     @Override

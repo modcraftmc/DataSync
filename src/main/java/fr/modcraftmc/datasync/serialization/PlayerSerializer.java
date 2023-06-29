@@ -36,7 +36,18 @@ public class PlayerSerializer {
 
     public static void savePlayerInventory(Player player, JsonObject jsonObject){
         CompoundTag playerTag = new CompoundTag();
-        player.addAdditionalSaveData(playerTag);
+        player.getFoodData().addAdditionalSaveData(playerTag);
+        playerTag.putFloat("Health", player.getHealth());
+        playerTag.putFloat("AbsorptionAmount", player.getAbsorptionAmount());
+        playerTag.put("Attributes", player.getAttributes().save());
+        playerTag.put("Inventory", player.getInventory().save(new ListTag()));
+        playerTag.putInt("SelectedItemSlot", player.getInventory().selected);
+        playerTag.putFloat("XpP", player.experienceProgress);
+        playerTag.putInt("XpLevel", player.experienceLevel);
+        playerTag.putInt("XpTotal", player.totalExperience);
+        playerTag.putInt("Score", player.getScore());
+        player.getAbilities().addSaveData(playerTag);
+        playerTag.put("EnderItems", player.getEnderChestInventory().createTag());
         jsonObject.add(PLAYER_DATA_IDENTIFIER, SerializationUtil.ToJsonElement(playerTag));
     }
 
@@ -82,7 +93,22 @@ public class PlayerSerializer {
     }
 
     public static void loadPlayerInventory(JsonObject jsonObject, ServerPlayer player) {
-        player.readAdditionalSaveData(SerializationUtil.GetNbt(jsonObject.get(PLAYER_DATA_IDENTIFIER)));
+        CompoundTag playerTag = SerializationUtil.GetNbt(jsonObject.get(PLAYER_DATA_IDENTIFIER));
+        player.getFoodData().readAdditionalSaveData(playerTag);
+        player.setAbsorptionAmount(playerTag.getFloat("AbsorptionAmount"));
+        if (playerTag.contains("Attributes", 9) && player.level != null && !player.level.isClientSide) {
+            player.getAttributes().load(playerTag.getList("Attributes", 10));
+        }
+        if (playerTag.contains("Health", 99)) {
+            player.setHealth(playerTag.getFloat("Health"));
+        }
+        ListTag listtag = playerTag.getList("Inventory", 10);
+        player.getInventory().load(listtag);
+        player.getInventory().selected = playerTag.getInt("SelectedItemSlot");
+        player.experienceProgress = playerTag.getFloat("XpP");
+        player.experienceLevel = playerTag.getInt("XpLevel");
+        player.totalExperience = playerTag.getInt("XpTotal");
+        player.setScore(playerTag.getInt("Score"));
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
     }
 

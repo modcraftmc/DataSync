@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.BiConsumer;
 
 public class PlayersLocation {
     private final Map<String, SyncServer> playersLocation;
@@ -18,6 +19,9 @@ public class PlayersLocation {
         return playersLocation;
     }
 
+    public List<BiConsumer<String, SyncServer>> playerJoinedEvent = new ArrayList<>();
+    public List<BiConsumer<String, SyncServer>> playerLeavedEvent = new ArrayList<>();
+
     public void setPlayerLocation(String player, SyncServer location) {
         if(playersLocation.containsKey(player)) {
             playersLocation.get(player).removePlayer(player);
@@ -29,12 +33,16 @@ public class PlayersLocation {
             location.addPlayer(player);
             DataSync.updatePlayersLocationToClients();
         }
+
+        playerJoinedEvent.forEach(event -> event.accept(player, location));
     }
 
     public void removePlayer(String player) {
         if(playersLocation.containsKey(player)){
-            playersLocation.get(player).removePlayer(player);
+            SyncServer server = playersLocation.get(player);
+            server.removePlayer(player);
             this.playersLocation.remove(player);
+            playerLeavedEvent.forEach(event -> event.accept(player, server));
             DataSync.updatePlayersLocationToClients();
         }
     }

@@ -24,7 +24,6 @@ public class PlayerDataLoader {
     private static Map<String, JsonObject> playerData = new HashMap<>();
     public static MongoCollection<Document> databasePlayerData;
 
-    @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         String playerName = player.getName().getString();
@@ -37,7 +36,6 @@ public class PlayerDataLoader {
         player.connection.disconnect(Component.literal("No data found for you in database, please contact an administrator"));
     }
 
-    @SubscribeEvent
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         saveDataToDatabase(player);

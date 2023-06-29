@@ -36,6 +36,8 @@ public class PlayerJoined extends BaseMessage{
         if (syncServer != null){
             DataSync.LOGGER.debug(String.format("Player %s joined server %s", playerName, serverName));
             DataSync.playersLocation.setPlayerLocation(playerName, syncServer);
+        }else {
+            DataSync.playersLocation.removePlayer(playerName);
         }
     }
 }

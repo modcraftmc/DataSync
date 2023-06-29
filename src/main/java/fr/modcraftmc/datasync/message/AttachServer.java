@@ -33,10 +33,6 @@ public class AttachServer extends BaseMessage{
         if(serverName.equals(DataSync.serverName)) return; // this message is send over all servers, we don't want to add ourself to the cluster
         DataSync.serverCluster.addServer(new SyncServer(serverName));
         DataSync.LOGGER.debug(String.format("Received attach request from %s and have been attached to the network", serverName));
-        try {
-            RabbitmqDirectPublisher.instance.publish(serverName, new AttachServerResponse(DataSync.serverName).serializeToString());
-        } catch (IOException e) {
-            DataSync.LOGGER.error(String.format("Error while publishing message to rabbitmq cannot respond to attach request: %s", e.getMessage()));
-        }
+        DataSync.serverCluster.getServer(serverName).sendMessage(new AttachServerResponse(DataSync.serverName, DataSync.serverCluster.getServer(DataSync.serverName).getPlayers()).serializeToString());
     }
 }

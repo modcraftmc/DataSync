@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.tpsync;
 
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.message.TpRequestMessage;
 import fr.modcraftmc.datasync.message.TransferPlayer;
 
 public class TpRequest {
@@ -22,7 +21,7 @@ public class TpRequest {
     public void fire() {
         DataSync.playersLocation.getPlayerLocation(playerTargetName).ifPresent(
                 syncServer -> {
-                    syncServer.sendMessage(new TpRequestMessage(this).serializeToString());
+                    syncServer.sendMessage(new fr.modcraftmc.datasync.message.TpRequest(this).serializeToString());
                     DataSync.sendProxy(new TransferPlayer(playerSourceName, syncServer.getName()).serializeToString());
                 }
         );

@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync;
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
 import fr.modcraftmc.datasync.command.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.datasync.ftbsync.FTBSync;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
 import fr.modcraftmc.datasync.mongodb.MongodbConnection;
@@ -60,13 +61,14 @@ public class DataSync {
     }
 
     public DataSync(){
+        DataSync.LOGGER.info("DataSync's here !");
         onConfigLoad = new ArrayList<>();
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
         modEventBus.addListener(this::serverSetup);
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
-        MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoin);
+
+
 
         ARGUMENT_TYPES.register(modEventBus);
         network.Init();
@@ -74,14 +76,24 @@ public class DataSync {
 
     @SubscribeEvent
     public void serverSetup(FMLDedicatedServerSetupEvent event){
+        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerJoined);
+        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerSave);
+
         DataSync.LOGGER.debug("Initializing main modules");
         initializeDatabaseConnection();
         initializeMessageSystem();
         MessageHandler.init();
-
         loadConfig();
         initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
+        initializeFTBSync(); // must be after loadConfig because it use mongodb connection
         DataSync.LOGGER.info("Main modules initialized");
+    }
+
+    private void initializeFTBSync() {
+        DataSync.LOGGER.debug("Initializing FTBSync");
+        FTBSync.init();
+        DataSync.LOGGER.info("FTBSync initialized");
     }
 
     private void initializeNetworkIdentity() {
@@ -125,6 +137,7 @@ public class DataSync {
             if(mongodbConnection != null) mongodbConnection.close();
             mongodbConnection = new MongodbConnection(mongodbConfigData.host, mongodbConfigData.port, mongodbConfigData.username, mongodbConfigData.password, mongodbConfigData.database);
             PlayerDataLoader.databasePlayerData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.PLAYER_DATA_COLLECTION_NAME);
+            FTBSync.databaseTeamsData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.TEAMS_DATA_COLLECTION_NAME);
             DataSync.LOGGER.info("Connected to MongoDB");
         });
     }

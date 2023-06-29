@@ -4,7 +4,7 @@ import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
 
 public class PlayerLeaved extends BaseMessage {
-    public static final String MESSAGE_NAME = "player_leaved";
+    public static final String MESSAGE_NAME = "PlayerLeaved";
 
     private String playerName;
     private String serverName;

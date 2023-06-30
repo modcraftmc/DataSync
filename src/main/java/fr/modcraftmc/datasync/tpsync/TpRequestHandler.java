@@ -6,15 +6,12 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
-import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-@Mod.EventBusSubscriber(modid = "datasync", bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class TpRequestHandler {
     private static final List<TpRequest> tpRequestsBuffer = new ArrayList<>();
     public static final int tpTimeout = 20; //time in second before tp request expire
@@ -30,8 +27,7 @@ public class TpRequestHandler {
         tpRequestsBuffer.add(tpRequest);
     }
 
-    @SubscribeEvent
-    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
+    public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event){
         cleanTpRequest();
         for(TpRequest tpRequest : tpRequestsBuffer){
             if(tpRequest.getPlayerSourceName().equals(event.getEntity().getName().getString())){

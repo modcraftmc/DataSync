@@ -5,12 +5,11 @@ import fr.modcraftmc.datasync.message.AttachServer;
 import fr.modcraftmc.datasync.message.DetachServer;
 import fr.modcraftmc.datasync.message.MessageSender;
 import fr.modcraftmc.datasync.rabbitmq.RabbitmqPublisher;
-import net.minecraft.commands.CommandSourceStack;
-import net.minecraft.network.chat.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class ServerCluster implements MessageSender {
     public List<SyncServer> servers;
@@ -23,12 +22,12 @@ public class ServerCluster implements MessageSender {
         servers.add(server);
     }
 
-    public SyncServer getServer(String serverName){
+    public Optional<SyncServer> getServer(String serverName){
         for (SyncServer server : servers) {
-            if(server.getName().equals(serverName)) return server;
+            if(server.getName().equals(serverName)) return Optional.of(server);
         }
         DataSync.LOGGER.error(String.format("Server %s not found in cluster", serverName));
-        return null;
+        return Optional.empty();
     }
 
     public void attach(){
@@ -81,7 +80,7 @@ public class ServerCluster implements MessageSender {
         var playersLocations = DataSync.playersLocation.getPlayersLocation();
         for (var entry : playersLocations.entrySet()){
             if (entry.getKey().equals(player)){
-                return getServer(entry.getValue().getName());
+                return entry.getValue();
             }
         }
         return null;

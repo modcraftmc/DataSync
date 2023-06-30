@@ -43,9 +43,10 @@ public class AttachServerResponse extends BaseMessage{
 
     @Override
     protected void handle() {
-        DataSync.serverCluster.addServer(new SyncServer(serverName));
+        SyncServer syncServer = new SyncServer(serverName);
+        DataSync.serverCluster.addServer(syncServer);
         for (String player : players) {
-            DataSync.playersLocation.setPlayerLocation(player, DataSync.serverCluster.getServer(serverName));
+            DataSync.playersLocation.setPlayerLocation(player, syncServer);
         }
         DataSync.LOGGER.debug("Server %s responded and have been attached to the network");
     }

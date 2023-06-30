@@ -109,6 +109,10 @@ public class PlayerSerializer {
         player.experienceLevel = playerTag.getInt("XpLevel");
         player.totalExperience = playerTag.getInt("XpTotal");
         player.setScore(playerTag.getInt("Score"));
+        player.getAbilities().loadSaveData(playerTag);
+        if (playerTag.contains("EnderItems", 9)) {
+            player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", 10));
+        }
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
     }
 

@@ -1,9 +1,8 @@
 package fr.modcraftmc.datasync.rabbitmq;
 
-import com.rabbitmq.client.Channel;
-import com.rabbitmq.client.Connection;
-import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.*;
 import fr.modcraftmc.datasync.DataSync;
+import fr.modcraftmc.datasync.SecurityWatcher;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,9 +21,21 @@ public class RabbitmqConnection {
         factory.setUsername(username);
         factory.setPassword(password);
         factory.setVirtualHost(virtualHost);
-
         try {
             connection = factory.newConnection();
+            ((Recoverable) connection).addRecoveryListener(new RecoveryListener() {
+                @Override
+                public void handleRecovery(Recoverable recoverable) {
+                    DataSync.LOGGER.warn("RabbitMQ server is back online");
+                    DataSync.dataSecurityWatcher.removeIssue(SecurityWatcher.RABBIMQ_CONNECTION_ISSUE);
+                }
+
+                @Override
+                public void handleRecoveryStarted(Recoverable recoverable) {
+                    DataSync.LOGGER.error("RabbitMQ server is unreachable");
+                    DataSync.dataSecurityWatcher.addIssue(SecurityWatcher.RABBIMQ_CONNECTION_ISSUE);
+                }
+            });
         } catch (IOException | TimeoutException e) {
             DataSync.LOGGER.error("Error while connecting to RabbitMQ : %s".formatted(e.getMessage()));
             throw new RuntimeException(e);

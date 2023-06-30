@@ -69,7 +69,10 @@ public class FTBSync {
             DataSync.LOGGER.info("FTBTeams is loaded, enabling FTBTeams sync");
             FTBTeamsLoaded = true;
 
-            TeamManagerEvent.CREATED.register((event) -> loadTeams());
+            TeamManagerEvent.CREATED.register((event) -> {
+                loadTeams();
+                DataSync.playersLocation.getAllPlayers().forEach(FTBSync::setPlayerTeamOnline);
+            });
             TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
             TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
             TeamEvent.PLAYER_CHANGED.register((event) -> {
@@ -82,22 +85,12 @@ public class FTBSync {
             TeamEvent.DELETED.register((event) -> removeTeam(event.getTeam()));
 
             DataSync.playersLocation.playerJoinedEvent.add((playerName, syncServer) -> {
-                FTBTeamsAPI.getManager().getKnownPlayers().forEach((uuid, playerTeam) -> {
-                    if(playerTeam.playerName.equals(playerName)){
-                        DataSync.LOGGER.debug(String.format("player team of %s set online", playerName));
-                        playerTeam.online = true;
-                        playerTeam.updatePresence();
-                    }
-                });
+                if(!FTBTeamsAPI.isManagerLoaded()) return;
+                setPlayerTeamOnline(playerName);
             });
             DataSync.playersLocation.playerLeavedEvent.add((playerName, syncServer) -> {
-                FTBTeamsAPI.getManager().getKnownPlayers().forEach((uuid, playerTeam) -> {
-                    if(playerTeam.playerName.equals(playerName)){
-                        DataSync.LOGGER.debug(String.format("player team of %s set offline", playerName));
-                        playerTeam.online = false;
-                        playerTeam.updatePresence();
-                    }
-                });
+                if(!FTBTeamsAPI.isManagerLoaded()) return;
+                setPlayerTeamOnline(playerName);
             });
         }
         if(ModList.get().isLoaded(References.FTBQUESTS_MOD_ID)) {
@@ -115,6 +108,16 @@ public class FTBSync {
         }
     }
 
+    public static void removeTeam(Team team){
+        if(!FTBTeamsLoaded) return;
+        DataSync.LOGGER.debug(String.format("Removing team: %s", team.getDisplayName()));
+        CompoundTag teamsData = team.serializeNBT();
+        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData), true);
+
+        DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
+        removeTeamFromDB(team);
+    }
+
     public static void syncTeam(Team team) {
         if(!FTBTeamsLoaded) return;
         DataSync.LOGGER.debug(String.format("Syncing team: %s", team.getDisplayName()));
@@ -128,16 +131,6 @@ public class FTBSync {
         }
 
         saveTeamToDB(team);
-    }
-
-    public static void removeTeam(Team team){
-        if(!FTBTeamsLoaded) return;
-        DataSync.LOGGER.debug(String.format("Removing team: %s", team.getDisplayName()));
-        CompoundTag teamsData = team.serializeNBT();
-        SyncTeams syncTeamsMessage = new SyncTeams(team.getId().toString(), team.getType().name(), SerializationUtil.ToJsonElement(teamsData), true);
-
-        DataSync.serverCluster.sendMessageExceptCurrent(syncTeamsMessage.serializeToString());
-        removeTeamFromDB(team);
     }
 
     public static void handleTeamSync(SyncTeams syncTeamMessage){
@@ -582,30 +575,27 @@ public class FTBSync {
         FTBQuests.LOGGER.info("Loaded " + questFile.chapterGroups.size() + " chapter groups, " + chapterCounter + " chapters, " + questCounter + " quests, " + questFile.rewardTables.size() + " reward tables");
     }
 
-    public static void inviteInterServer(UUID playerUUID, PartyTeam team, ServerPlayer sourcePlayer){
-        String playerInvited = FTBTeamsAPI.getManager().getInternalPlayerTeam(playerUUID).playerName;
-        Optional<SyncServer> playerLocation = DataSync.playersLocation.getPlayerLocation(playerInvited);
-        if(playerLocation.isPresent() && !playerLocation.get().getName().equals(DataSync.serverName)){
-            Optional<GameProfile> gameProfile = ServerLifecycleHooks.getCurrentServer().getProfileCache().get(playerUUID);
-            if(gameProfile.isPresent()) {
-                try {
-                    team.invite(sourcePlayer, List.of(gameProfile.get()));
-                    new SendMessage(Component.translatable("ftbteams.message.invite_sent", sourcePlayer.getName().copy().withStyle(ChatFormatting.YELLOW)), playerInvited).send();
-                    Component acceptButton = Component.translatable("ftbteams.accept")
-                            .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(
-                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + team.getStringID()))
-                            );
-                    Component declineButton = Component.translatable("ftbteams.decline")
-                            .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(
-                                    new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + team.getStringID()))
-                            );
-                    new SendMessage(Component.literal("[").append(acceptButton).append("] [").append(declineButton).append("]"), playerInvited).send();
-                } catch (CommandSyntaxException e) {
-                    sourcePlayer.displayClientMessage(Component.literal(e.getMessage()).withStyle(ChatFormatting.RED), false);
-                }
+    public static void setPlayerTeamOnline(String playerName){
+        FTBTeamsAPI.getManager().getKnownPlayers().forEach((uuid, playerTeam) -> {
+            if(playerTeam.playerName.equals(playerName)){
+                DataSync.LOGGER.debug(String.format("player team of %s set online", playerName));
+                playerTeam.online = true;
+                playerTeam.updatePresence();
             }
-            else
-                DataSync.LOGGER.error("Could not find GameProfile for player " + playerInvited);
-        }
+        });
+    }
+
+    public static void sendInvitationMessage(UUID playerUUID, PartyTeam team, ServerPlayer sourcePlayer){
+        String playerInvited = FTBTeamsAPI.getManager().getInternalPlayerTeam(playerUUID).playerName;
+        new SendMessage(Component.translatable("ftbteams.message.invite_sent", sourcePlayer.getName().copy().withStyle(ChatFormatting.YELLOW)), playerInvited).send();
+        Component acceptButton = Component.translatable("ftbteams.accept")
+                .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(
+                        new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + team.getStringID()))
+                );
+        Component declineButton = Component.translatable("ftbteams.decline")
+                .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(
+                        new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + team.getStringID()))
+                );
+        new SendMessage(Component.literal("[").append(acceptButton).append("] [").append(declineButton).append("]"), playerInvited).send();
     }
 }

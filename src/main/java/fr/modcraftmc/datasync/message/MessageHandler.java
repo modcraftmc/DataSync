@@ -25,6 +25,7 @@ public class MessageHandler {
         messageMap.put(PlayerLeaved.MESSAGE_NAME, PlayerLeaved::deserialize);
         messageMap.put(TransferPlayer.MESSAGE_NAME, TransferPlayer::deserialize);
         messageMap.put(TpRequest.MESSAGE_NAME, TpRequest::deserialize);
+        messageMap.put(TpaRequest.MESSAGE_NAME, TpaRequest::deserialize);
         messageMap.put(SyncTeams.MESSAGE_NAME, SyncTeams::deserialize);
         messageMap.put(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
         messageMap.put(SyncTeamMessage.MESSAGE_NAME, SyncTeamMessage::deserialize);
@@ -35,13 +36,21 @@ public class MessageHandler {
             RabbitmqDirectSubscriber.instance.subscribe(DataSync.serverName, (consumerTag, message) -> {
                 DataSync.LOGGER.debug("Received message: " + new String(message.getBody()));
                 String messageJson = new String(message.getBody(), StandardCharsets.UTF_8);
-                MessageHandler.handle(messageJson);
+                try {
+                    MessageHandler.handle(messageJson);
+                } catch (Exception e) {
+                    DataSync.LOGGER.error("Error while handling message", e);
+                }
             });
 
             RabbitmqSubscriber.instance.subscribe((consumerTag, message) -> {
                 DataSync.LOGGER.debug("Received message: " + new String(message.getBody()));
                 String messageJson = new String(message.getBody(), StandardCharsets.UTF_8);
-                MessageHandler.handle(messageJson);
+                try {
+                    MessageHandler.handle(messageJson);
+                } catch (Exception e) {
+                    DataSync.LOGGER.error("Error while handling message", e);
+                }
             });
         });
     }

@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.tpsync;
 
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.message.TpaRequestMessage;
 
 public class TpaRequest {
     private final String playerSourceName;
@@ -20,7 +19,7 @@ public class TpaRequest {
 
     public void fire() {
         DataSync.playersLocation.getPlayerLocation(playerTargetName).ifPresent(
-                syncServer -> syncServer.sendMessage(new TpaRequestMessage(this).serializeToString())
+                syncServer -> syncServer.sendMessage(new fr.modcraftmc.datasync.message.TpaRequest(this).serializeToString())
         );
     }
 

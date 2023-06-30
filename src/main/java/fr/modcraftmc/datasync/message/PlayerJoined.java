@@ -32,12 +32,13 @@ public class PlayerJoined extends BaseMessage{
 
     @Override
     protected void handle() {
-        SyncServer syncServer = DataSync.serverCluster.getServer(serverName);
-        if (syncServer != null){
+        DataSync.serverCluster.getServer(serverName).ifPresentOrElse(
+        syncServer -> {
             DataSync.LOGGER.debug(String.format("Player %s joined server %s", playerName, serverName));
             DataSync.playersLocation.setPlayerLocation(playerName, syncServer);
-        }else {
+        },
+        () -> {
             DataSync.playersLocation.removePlayer(playerName);
-        }
+        });
     }
 }

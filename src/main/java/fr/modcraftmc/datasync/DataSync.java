@@ -12,10 +12,13 @@ import fr.modcraftmc.datasync.networkidentity.ServerCluster;
 import fr.modcraftmc.datasync.networking.Network;
 import fr.modcraftmc.datasync.networking.packets.PacketUpdateClusterPlayers;
 import fr.modcraftmc.datasync.rabbitmq.*;
+import fr.modcraftmc.datasync.tpsync.TpRequestHandler;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
 import net.minecraft.core.Registry;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
@@ -27,6 +30,7 @@ import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLDedicatedServerSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import net.minecraftforge.registries.DeferredRegister;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -52,6 +56,8 @@ public class DataSync {
     public static MongodbConnection mongodbConnection;
     public static RabbitmqConnection rabbitmqConnection;
 
+    public static SecurityWatcher dataSecurityWatcher;
+
     // Both side
     public static final Network network = new Network();
     public static DeferredRegister<ArgumentTypeInfo<?, ?>> ARGUMENT_TYPES = DeferredRegister.create(Registry.COMMAND_ARGUMENT_TYPE_REGISTRY, MOD_ID);
@@ -76,17 +82,47 @@ public class DataSync {
 
     @SubscribeEvent
     public void serverSetup(FMLDedicatedServerSetupEvent event){
-        MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
-        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerJoined);
-        MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerSave);
+        dataSecurityWatcher = new SecurityWatcher("data security watcher");
+        dataSecurityWatcher.registerOnInsecureEvent(() -> {
+            kickAllPlayers("DataSync is not secure, you cannot join the server. Reason(s) : \n" + dataSecurityWatcher.getReason());
+            DataSync.LOGGER.error("Data security is not ensured, server is now inaccessible.");
+            DataSync.LOGGER.error("Reason(s) : \n" + dataSecurityWatcher.getReason());
+
+            new Thread(() -> {
+                try {
+                    Thread.sleep(10000);
+                    while(!dataSecurityWatcher.isSecure()){
+                        DataSync.LOGGER.error("Data security is not ensured.");
+                        DataSync.LOGGER.error("Reason(s) : \n" + dataSecurityWatcher.getReason());
+
+                        Thread.sleep(10000);
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }).start();
+        });
+        dataSecurityWatcher.registerOnSecureEvent(() -> {
+            DataSync.LOGGER.warn("Data security is ensured again, server is now accessible");
+        });
+
+        try {
+            MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+            MinecraftForge.EVENT_BUS.addListener(DataSync::onPlayerJoin);
+            MinecraftForge.EVENT_BUS.addListener(TpRequestHandler::onPlayerJoined);
+            MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerJoined);
+            MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerSave);
+        }catch (Exception e){
+            DataSync.LOGGER.error("Error while registering events server side", e);
+        }
 
         DataSync.LOGGER.debug("Initializing main modules");
         initializeDatabaseConnection();
         initializeMessageSystem();
         MessageHandler.init();
         loadConfig();
-        initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
         initializeFTBSync(); // must be after loadConfig because it use mongodb connection
+        initializeNetworkIdentity();// must be after loadConfig because it use rabbitmq connection
         DataSync.LOGGER.info("Main modules initialized");
     }
 
@@ -158,12 +194,30 @@ public class DataSync {
     }
 
     public static void updatePlayersLocationToClients(){
+        if(ServerLifecycleHooks.getCurrentServer() == null) return;
+
         PacketUpdateClusterPlayers packetUpdateClusterPlayers = new PacketUpdateClusterPlayers(playersLocation.getAllPlayers());
         network.sendToAllPlayers(packetUpdateClusterPlayers);
     }
 
-    public void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
+        if(!dataSecurityWatcher.isSecure()){
+            ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
+            if(player != null) player.connection.disconnect(Component.literal("DataSync is not secure, you cannot join the server. Reason(s) : \n" + dataSecurityWatcher.getReason()));
+        }
+
         PacketUpdateClusterPlayers packetUpdateClusterPlayers = new PacketUpdateClusterPlayers(playersLocation.getAllPlayers());
         network.sendTo(packetUpdateClusterPlayers, (ServerPlayer) event.getEntity());
     }
+
+    public static void kickAllPlayers(String reason){
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        if(server == null) return;
+
+        for(ServerPlayer player : server.getPlayerList().getPlayers()){
+            player.connection.disconnect(Component.literal(reason));
+        }
+    }
+
+
 }

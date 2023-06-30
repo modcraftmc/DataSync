@@ -14,7 +14,6 @@ public class DataSyncCommand {
     public static final String COMMAND_NAME = "datasync";
 
     public DataSyncCommand(CommandDispatcher<CommandSourceStack> dispatcher){
-        new RabbitmqTestCommand();
         new SerializerTestCommand();
         new NetworkCommand();
         new TpCommand();

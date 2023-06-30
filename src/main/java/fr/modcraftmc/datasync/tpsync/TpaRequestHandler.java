@@ -1,11 +1,9 @@
 package fr.modcraftmc.datasync.tpsync;
 
 import fr.modcraftmc.datasync.DataSync;
-import net.minecraft.client.gui.components.ChatComponent;
+import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.chat.ComponentContents;
-import net.minecraft.network.chat.ComponentUtils;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
@@ -30,9 +28,9 @@ public class TpaRequestHandler {
 
     private static void informPlayer(ServerPlayer player){
         //send message to player with interactive text to accept or deny tpa request
-        Component message = Component.literal("You have received a tpa request from " + player.getName().getString() + ". Click on buttons below to accept or deny the request or type /tpaccept or /tpdeny in chat\n");
-        Component acceptButton = Component.literal("[Accept]").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpaccept")));
-        Component denyButton = Component.literal("[Deny]").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpdeny")));
+        Component message = Component.literal("You have received a tpa request from " + player.getName().getString() + ". Click on buttons below to accept or deny the request or type /tpaccept or /tpdeny in chat\n").withStyle(style -> style.withColor(ChatFormatting.GOLD));
+        Component acceptButton = Component.literal("[Accept]   ").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpaccept"))).withStyle(style -> style.withColor(ChatFormatting.GREEN));
+        Component denyButton = Component.literal("[Deny]").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpdeny"))).withStyle(style -> style.withColor(ChatFormatting.RED));
         //merge message and buttons
         message.getSiblings().add(acceptButton);
         message.getSiblings().add(denyButton);

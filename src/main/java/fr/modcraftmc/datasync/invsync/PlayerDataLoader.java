@@ -6,23 +6,26 @@ import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.serialization.PlayerSerializer;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.eventbus.api.EventPriority;
-import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.bson.Document;
 
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Mod.EventBusSubscriber(modid = DataSync.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
 public class PlayerDataLoader {
     private static Map<String, JsonObject> playerData = new HashMap<>();
     public static MongoCollection<Document> databasePlayerData;
+    private static List<ServerPlayer> savablePlayers = new ArrayList<>();
+
+    public static void checkSavablePlayers(){
+        MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
+        savablePlayers.removeIf(player -> !server.getPlayerList().getPlayers().contains(player));
+    }
 
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
@@ -37,8 +40,10 @@ public class PlayerDataLoader {
     }
 
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
+        checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
-        saveDataToDatabase(player);
+        if(savablePlayers.contains(player))
+            saveDataToDatabase(player);
     }
 
     private static boolean loadDataFromDatabase(ServerPlayer player, String playerName) {
@@ -48,6 +53,8 @@ public class PlayerDataLoader {
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(document.getString("data"), JsonObject.class);
         PlayerSerializer.deserializePlayer(playerData, player);
+        if(!savablePlayers.contains(player))
+            savablePlayers.add(player);
         return true;
 
     }
@@ -69,6 +76,8 @@ public class PlayerDataLoader {
             JsonObject data = playerData.get(playerName);
             PlayerSerializer.deserializePlayer(data, player);
             playerData.remove(playerName);
+            if(!savablePlayers.contains(player))
+                savablePlayers.add(player);
             return true;
         }
         return false;

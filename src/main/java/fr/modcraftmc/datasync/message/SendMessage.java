@@ -33,8 +33,8 @@ public class SendMessage extends BaseMessage {
     }
 
     public void send(){
-        DataSync.playersLocation.getPlayerLocation(playerName).ifPresent(playerLocation -> {
-            DataSync.serverCluster.getServer(playerLocation.getName()).sendMessage(this.serializeToString());
+        DataSync.playersLocation.getPlayerLocation(playerName).ifPresent(server -> {
+            server.sendMessage(this.serializeToString());
         });
     }
 

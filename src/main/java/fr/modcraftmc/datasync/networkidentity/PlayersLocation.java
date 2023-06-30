@@ -2,10 +2,7 @@ package fr.modcraftmc.datasync.networkidentity;
 
 import fr.modcraftmc.datasync.DataSync;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.function.BiConsumer;
 
 public class PlayersLocation {

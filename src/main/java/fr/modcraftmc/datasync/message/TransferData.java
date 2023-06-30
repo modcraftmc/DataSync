@@ -45,7 +45,7 @@ public class TransferData extends BaseMessage {
         String messageData = new LoadData(playerName, gson.toJson(playerData)).serializeToString();
 
         DataSync.LOGGER.info("Sending data to " + newServerName + " for player " + playerName);
-        DataSync.serverCluster.getServer(newServerName).sendMessage(messageData);
+        DataSync.serverCluster.getServer(newServerName).ifPresent(server -> server.sendMessage(messageData));
 
         PlayerDataLoader.saveDataToDatabase(player);
     }

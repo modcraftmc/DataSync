@@ -16,23 +16,23 @@ import java.util.Collection;
 public class MixinPartyTeam {
     @Inject(at = @At(value = "INVOKE_ASSIGN", target = "Ldev/ftb/mods/ftbteams/data/FTBTUtils;getPlayerByUUID(Lnet/minecraft/server/MinecraftServer;Ljava/util/UUID;)Lnet/minecraft/server/level/ServerPlayer;") , method = "invite")
     protected void onInvite(ServerPlayer from, Collection<GameProfile> players, CallbackInfoReturnable<Integer> cir){
-        DataSync.LOGGER.debug("received PartyTeam invite");
+        DataSync.LOGGER.debug("FTBTeams PartyTeam inviting");
         PartyTeam team = (PartyTeam) (Object) this;
         FTBSync.syncTeam(team);
         for (GameProfile player : players) {
-            FTBSync.inviteInterServer(player.getId(), team, from);
+            FTBSync.sendInvitationMessage(player.getId(), team, from);
         }
     }
 
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManager;syncTeamsToAll([Ldev/ftb/mods/ftbteams/data/Team;)V") , method = "promote")
     protected void onPromote(ServerPlayer from, Collection<GameProfile> players, CallbackInfoReturnable<Integer> cir){
-        DataSync.LOGGER.debug("received PartyTeam promote");
+        DataSync.LOGGER.debug("FTBTeams PartyTeam promoting");
         FTBSync.syncTeam((dev.ftb.mods.ftbteams.data.PartyTeam) (Object) this);
     }
 
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManager;syncTeamsToAll([Ldev/ftb/mods/ftbteams/data/Team;)V") , method = "demote")
     protected void onDemote(ServerPlayer from, Collection<GameProfile> players, CallbackInfoReturnable<Integer> cir){
-        DataSync.LOGGER.debug("received PartyTeam demote");
+        DataSync.LOGGER.debug("FTBTeams PartyTeam demoting");
         FTBSync.syncTeam((dev.ftb.mods.ftbteams.data.PartyTeam) (Object) this);
     }
 }

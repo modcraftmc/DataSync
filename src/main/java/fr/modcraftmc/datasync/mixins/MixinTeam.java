@@ -17,13 +17,13 @@ import java.util.UUID;
 public class MixinTeam {
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManager;syncTeamsToAll([Ldev/ftb/mods/ftbteams/data/Team;)V") , method = "denyInvite")
     protected void onDenyInvite(CommandSourceStack source, CallbackInfoReturnable<Integer> cir){
-        DataSync.LOGGER.debug("received Team denyInvite");
+        DataSync.LOGGER.debug("FTBTeams Team denying invite");
         FTBSync.syncTeam((dev.ftb.mods.ftbteams.data.Team) (Object) this);
     }
 
     @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/Team;getOnlineMembers()Ljava/util/List;") , method = "sendMessage")
     protected void onSendMessage(UUID from, Component text, CallbackInfo ci){
-        DataSync.LOGGER.debug("received Team sendMessage");
+        DataSync.LOGGER.debug("FTBTeams Team sending message");
         Team team = (Team) (Object) this;
         FTBSync.syncTeamMessage(team.getId(), from, text);
     }

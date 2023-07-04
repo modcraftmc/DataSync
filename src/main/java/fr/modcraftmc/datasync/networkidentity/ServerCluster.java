@@ -26,7 +26,6 @@ public class ServerCluster implements MessageSender {
         for (SyncServer server : servers) {
             if(server.getName().equals(serverName)) return Optional.of(server);
         }
-        DataSync.LOGGER.error(String.format("Server %s not found in cluster", serverName));
         return Optional.empty();
     }
 

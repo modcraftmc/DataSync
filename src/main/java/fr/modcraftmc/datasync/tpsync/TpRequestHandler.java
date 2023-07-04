@@ -24,6 +24,7 @@ public class TpRequestHandler {
             server.execute(() -> teleportPlayer(server, playerSourceName, tpRequest.getPlayerTargetName())); //handleTpRequest is called from another thread
             return;
         }
+
         tpRequestsBuffer.add(tpRequest);
     }
 

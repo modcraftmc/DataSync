@@ -23,6 +23,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
+import net.minecraftforge.event.entity.player.PlayerNegotiationEvent;
 import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -108,6 +109,7 @@ public class DataSync {
 
         try {
             MinecraftForge.EVENT_BUS.addListener(this::onServerStop);
+            MinecraftForge.EVENT_BUS.addListener(DataSync::onPreLogin);
             MinecraftForge.EVENT_BUS.addListener(DataSync::onPlayerJoin);
             MinecraftForge.EVENT_BUS.addListener(TpRequestHandler::onPlayerJoined);
             MinecraftForge.EVENT_BUS.addListener(PlayerDataLoader::onPlayerJoined);
@@ -200,12 +202,13 @@ public class DataSync {
         network.sendToAllPlayers(packetUpdateClusterPlayers);
     }
 
-    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
+    public static void onPreLogin(PlayerNegotiationEvent event){
         if(!dataSecurityWatcher.isSecure()){
-            ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
-            if(player != null) player.connection.disconnect(Component.literal("DataSync is not secure, you cannot join the server. Reason(s) : \n" + dataSecurityWatcher.getReason()));
+            event.getConnection().disconnect(Component.literal("DataSync is not secure, you cannot join the server. Reason(s) : \n" + dataSecurityWatcher.getReason()));
         }
+    }
 
+    public static void onPlayerJoin(PlayerEvent.PlayerLoggedInEvent event){
         PacketUpdateClusterPlayers packetUpdateClusterPlayers = new PacketUpdateClusterPlayers(playersLocation.getAllPlayers());
         network.sendTo(packetUpdateClusterPlayers, (ServerPlayer) event.getEntity());
     }

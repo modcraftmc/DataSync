@@ -34,9 +34,10 @@ public class PlayerDataLoader {
         if (loadDataFromTransferBuffer(player, playerName)) return;
         DataSync.LOGGER.info(String.format("No transfer data found for player %s (normal if first connection on this group)", playerName));
 
-        if(loadDataFromDatabase(player, playerName)) return;
-        DataSync.LOGGER.error(String.format("No data found for player %s in database kicking the player", playerName));
-        player.connection.disconnect(Component.literal("No data found for you in database, please contact an administrator"));
+        loadDataFromDatabase(player, playerName);
+//        if(loadDataFromDatabase(player, playerName)) return;
+//        DataSync.LOGGER.error(String.format("No data found for player %s in database kicking the player", playerName));
+//        player.connection.disconnect(Component.literal("No data found for you in database, please contact an administrator"));
     }
 
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
@@ -48,8 +49,10 @@ public class PlayerDataLoader {
 
     private static boolean loadDataFromDatabase(ServerPlayer player, String playerName) {
         Document document = databasePlayerData.find(new Document("name", playerName)).first();
-        if (document == null)
-            return false;
+        if (document == null) {
+            DataSync.LOGGER.info(String.format("Creating new data for player %s", playerName));
+            document = new Document("name", playerName).append("data", "{}");
+        }
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(document.getString("data"), JsonObject.class);
         PlayerSerializer.deserializePlayer(playerData, player);

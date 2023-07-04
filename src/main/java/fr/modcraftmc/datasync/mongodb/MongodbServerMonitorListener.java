@@ -12,10 +12,6 @@ public class MongodbServerMonitorListener implements ServerMonitorListener {
     }
 
     @Override
-    public void serverHearbeatStarted(ServerHeartbeatStartedEvent event) {
-    }
-
-    @Override
     public void serverHeartbeatSucceeded(ServerHeartbeatSucceededEvent event) {
         successHeartbeat();
     }

@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.serialization;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.References;
 import net.minecraft.nbt.CompoundTag;
@@ -93,7 +94,11 @@ public class PlayerSerializer {
     }
 
     public static void loadPlayerInventory(JsonObject jsonObject, ServerPlayer player) {
-        CompoundTag playerTag = SerializationUtil.GetNbt(jsonObject.get(PLAYER_DATA_IDENTIFIER));
+        JsonElement playerData = jsonObject.get(PLAYER_DATA_IDENTIFIER);
+        if(playerData == null) return;
+
+        CompoundTag playerTag = SerializationUtil.GetNbt(playerData);
+
         player.getFoodData().readAdditionalSaveData(playerTag);
         player.setAbsorptionAmount(playerTag.getFloat("AbsorptionAmount"));
         if (playerTag.contains("Attributes", 9) && player.level != null && !player.level.isClientSide) {

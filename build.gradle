@@ -25,6 +25,8 @@ archivesBaseName = "${mod_name}"
 // Mojang ships Java 17 to end users in 1.18+, so your mod should target Java 17.
 java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+jarJar.enable()
+
 println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'}), Arch: ${System.getProperty 'os.arch'}"
 minecraft {
     // The mappings can be changed at any time and must be in the following format.
@@ -150,6 +152,7 @@ repositories {
     maven {
         url "https://maven.architectury.dev/"
     }
+    mavenLocal()
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -194,6 +197,12 @@ dependencies {
     shade 'com.moandjiezana.toml:toml4j:0.7.2'
     shade 'com.rabbitmq:amqp-client:5.16.0'
     shade 'org.mongodb:mongodb-driver-sync:4.9.0'
+
+    implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.0,2.1]')
+
+    jarJar(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.0,2.1]') {
+        jarJar.pin(it, "2.0")
+    }
 
     // For more info...
     // http://www.gradle.org/docs/current/userguide/artifact_dependencies_tutorial.html

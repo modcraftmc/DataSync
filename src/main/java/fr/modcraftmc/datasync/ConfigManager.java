@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync;
 
-import com.moandjiezana.toml.Toml;
 import net.minecraftforge.fml.loading.FMLPaths;
+import shaded.toml.Toml;
 
 import java.io.File;
 import java.io.FileOutputStream;

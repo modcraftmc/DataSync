@@ -14,6 +14,8 @@ import fr.modcraftmc.datasync.networking.packets.PacketUpdateClusterPlayers;
 import fr.modcraftmc.datasync.rabbitmq.*;
 import fr.modcraftmc.datasync.tpsync.TpRequestHandler;
 import fr.modcraftmc.shared.mongodb.MongoDbConnectionBuilder;
+import fr.modcraftmc.shared.rabbitmq.RabbitmqConnection;
+import fr.modcraftmc.shared.rabbitmq.RabbitmqConnectionBuilder;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
@@ -38,6 +40,7 @@ import org.slf4j.Logger;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 @Mod(DataSync.MOD_ID)
 @Mod.EventBusSubscriber(modid = DataSync.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
@@ -155,17 +158,28 @@ public class DataSync {
         onConfigLoad.add(() -> {
             DataSync.LOGGER.debug("Connecting to RabbitMQ");
             ConfigManager.RabbitmqConfigData rabbitmqConfigData = ConfigManager.rabbitmqConfigData;
-
             if(rabbitmqConnection != null) rabbitmqConnection.close();
-            rabbitmqConnection = new RabbitmqConnection(rabbitmqConfigData.host, rabbitmqConfigData.port, rabbitmqConfigData.username, rabbitmqConfigData.password, rabbitmqConfigData.vhost);
-            DataSync.LOGGER.info("Connected to RabbitMQ");
 
-            DataSync.LOGGER.debug("Initializing message streams");
-            new RabbitmqPublisher(rabbitmqConnection);
-            new RabbitmqSubscriber(rabbitmqConnection);
-            new RabbitmqDirectPublisher(rabbitmqConnection);
-            new RabbitmqDirectSubscriber(rabbitmqConnection);
-            DataSync.LOGGER.debug("Message streams initialized");
+            try {
+                rabbitmqConnection = new RabbitmqConnectionBuilder()
+                        .host(rabbitmqConfigData.host)
+                        .port(rabbitmqConfigData.port)
+                        .username(rabbitmqConfigData.username)
+                        .password(rabbitmqConfigData.password)
+                        .virtualHost(rabbitmqConfigData.vhost)
+                        .build();
+
+                DataSync.LOGGER.info("Connected to RabbitMQ");
+                DataSync.LOGGER.debug("Initializing message streams");
+                //TODO: create builders
+                new RabbitmqPublisher(rabbitmqConnection);
+                new RabbitmqSubscriber(rabbitmqConnection);
+                new RabbitmqDirectPublisher(rabbitmqConnection);
+                new RabbitmqDirectSubscriber(rabbitmqConnection);
+                DataSync.LOGGER.debug("Message streams initialized");
+            } catch (IOException | TimeoutException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 

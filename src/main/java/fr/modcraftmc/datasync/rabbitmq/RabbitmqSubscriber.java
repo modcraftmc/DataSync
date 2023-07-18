@@ -4,6 +4,7 @@ import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.DeliverCallback;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.References;
+import fr.modcraftmc.shared.rabbitmq.RabbitmqConnection;
 
 import java.io.IOException;
 
@@ -13,8 +14,8 @@ public class RabbitmqSubscriber {
     private final Channel rabbitmqChannel;
 
     public RabbitmqSubscriber(RabbitmqConnection rabbitmqConnection) {
-        this.rabbitmqChannel = rabbitmqConnection.createChannel();
         try {
+            this.rabbitmqChannel = rabbitmqConnection.createChannel();
             rabbitmqChannel.exchangeDeclare(References.GLOBAL_EXCHANGE_NAME, "fanout");
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while creating RabbitMQ exchange");

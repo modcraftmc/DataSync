@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync.rabbitmq;
 import com.rabbitmq.client.Channel;
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.References;
+import fr.modcraftmc.shared.rabbitmq.RabbitmqConnection;
 
 import java.io.IOException;
 
@@ -12,8 +13,8 @@ public class RabbitmqDirectPublisher {
     private final Channel rabbitmqChannel;
 
     public RabbitmqDirectPublisher(RabbitmqConnection rabbitmqConnection) {
-        this.rabbitmqChannel = rabbitmqConnection.createChannel();
         try {
+            this.rabbitmqChannel = rabbitmqConnection.createChannel();
             rabbitmqChannel.exchangeDeclare(References.DIRECT_EXCHANGE_NAME, "direct");
         } catch (IOException e) {
             DataSync.LOGGER.error("Error while creating RabbitMQ exchange");

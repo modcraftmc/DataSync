@@ -183,10 +183,10 @@ dependencies {
     implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
     implementation("dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"){transitive = false}
 
-    implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.4,2.5]')
+    implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.6,2.7]')
 
-    jarJar(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.4,2.5]') {
-        jarJar.pin(it, "2.4")
+    jarJar(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.6,2.7]') {
+        jarJar.pin(it, "2.6")
     }
 
     // For more info...

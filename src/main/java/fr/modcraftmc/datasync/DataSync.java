@@ -1,18 +1,19 @@
 package fr.modcraftmc.datasync;
 
 import com.mojang.logging.LogUtils;
+import com.mongodb.client.MongoClient;
 import fr.modcraftmc.datasync.command.DataSyncCommand;
 import fr.modcraftmc.datasync.command.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.datasync.ftbsync.FTBSync;
 import fr.modcraftmc.datasync.invsync.PlayerDataLoader;
 import fr.modcraftmc.datasync.message.MessageHandler;
-import fr.modcraftmc.datasync.mongodb.MongodbConnection;
 import fr.modcraftmc.datasync.networkidentity.PlayersLocation;
 import fr.modcraftmc.datasync.networkidentity.ServerCluster;
 import fr.modcraftmc.datasync.networking.Network;
 import fr.modcraftmc.datasync.networking.packets.PacketUpdateClusterPlayers;
 import fr.modcraftmc.datasync.rabbitmq.*;
 import fr.modcraftmc.datasync.tpsync.TpRequestHandler;
+import fr.modcraftmc.shared.mongodb.MongoDbConnectionBuilder;
 import net.minecraft.commands.synchronization.ArgumentTypeInfo;
 import net.minecraft.commands.synchronization.ArgumentTypeInfos;
 import net.minecraft.commands.synchronization.SingletonArgumentInfo;
@@ -54,7 +55,8 @@ public class DataSync {
     public static final PlayersLocation playersLocation = new PlayersLocation();
     public static final ServerCluster serverCluster = new ServerCluster();
 
-    public static MongodbConnection mongodbConnection;
+    //public static MongodbConnectionOLD mongodbConnection;
+    public static MongoClient mongodbConnection;
     public static RabbitmqConnection rabbitmqConnection;
 
     public static SecurityWatcher dataSecurityWatcher;
@@ -173,9 +175,17 @@ public class DataSync {
             ConfigManager.MongodbConfigData mongodbConfigData = ConfigManager.mongodbConfigData;
 
             if(mongodbConnection != null) mongodbConnection.close();
-            mongodbConnection = new MongodbConnection(mongodbConfigData.host, mongodbConfigData.port, mongodbConfigData.username, mongodbConfigData.password, mongodbConfigData.database);
-            PlayerDataLoader.databasePlayerData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.PLAYER_DATA_COLLECTION_NAME);
-            FTBSync.databaseTeamsData = mongodbConnection.getClient().getDatabase(mongodbConfigData.database).getCollection(References.TEAMS_DATA_COLLECTION_NAME);
+            mongodbConnection = new MongoDbConnectionBuilder()
+                    .host(mongodbConfigData.host)
+                    .port(mongodbConfigData.port)
+                    .username(mongodbConfigData.username)
+                    .password(mongodbConfigData.password)
+                    .authsource(mongodbConfigData.database)
+                    .onHeartbeatFailed(() -> DataSync.dataSecurityWatcher.addIssue(SecurityWatcher.MONGODB_CONNECTION_ISSUE))
+                    .onHeartbeatSucceeded(() -> DataSync.dataSecurityWatcher.removeIssue(SecurityWatcher.MONGODB_CONNECTION_ISSUE))
+                    .build();
+            PlayerDataLoader.databasePlayerData = mongodbConnection.getDatabase(mongodbConfigData.database).getCollection(References.PLAYER_DATA_COLLECTION_NAME);
+            FTBSync.databaseTeamsData = mongodbConnection.getDatabase(mongodbConfigData.database).getCollection(References.TEAMS_DATA_COLLECTION_NAME);
             DataSync.LOGGER.info("Connected to MongoDB");
         });
     }

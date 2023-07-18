@@ -12,10 +12,8 @@ plugins {
     id 'eclipse'
     id 'maven-publish'
     id 'net.minecraftforge.gradle' version '5.1.+'
-    id 'com.github.johnrengelman.shadow' version '7.+'
 }
 
-apply plugin: 'com.github.johnrengelman.shadow'
 apply plugin: 'org.spongepowered.mixin'
 
 version = "${mc_version}-${mod_version}"
@@ -162,16 +160,6 @@ repositories {
     // }
 }
 
-configurations {
-    // Create the library configuration, where our non-mod libraries will be added to
-    library
-    // Any dependency in the library configuration will also be added to the implementation configuration
-    implementation.extendsFrom library
-
-    shade
-    library.extendsFrom shade
-}
-
 dependencies {
     // Specify the version of Minecraft to use. If this is any group other than 'net.minecraft', it is assumed
     // that the dep is a ForgeGradle 'patcher' dependency, and its patches will be applied.
@@ -194,14 +182,11 @@ dependencies {
     implementation(fg.deobf("dev.ftb.mods:ftb-library-forge:${ftb_library_version}")){transitive = false}
     implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
     implementation("dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"){transitive = false}
-    shade 'com.moandjiezana.toml:toml4j:0.7.2'
-    shade 'com.rabbitmq:amqp-client:5.16.0'
-    shade 'org.mongodb:mongodb-driver-sync:4.9.0'
 
-    implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.0,2.1]')
+    implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.4,2.5]')
 
-    jarJar(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.0,2.1]') {
-        jarJar.pin(it, "2.0")
+    jarJar(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.4,2.5]') {
+        jarJar.pin(it, "2.4")
     }
 
     // For more info...
@@ -214,32 +199,7 @@ mixin {
     config 'datasync.mixin.json'
 }
 
-// Configure all runs with the following
-minecraft.runs.all {
-    // Set the minecraft_classpath token to the paths of all jars in the library configuration
-    // This is added with the actual Minecraft classpath to get the real classpath information later on
-    lazyToken('minecraft_classpath') {
-        configurations.library.copyRecursive().resolve().collect { it.absolutePath }.join(File.pathSeparator)
-    }
-}
-
-shadowJar {
-    configurations = [project.configurations.shade]
-    classifier = 'shade'
-    relocate 'org.mongodb.mongodb-driver-sync', 'shaded.mongodb-driver-sync'
-    relocate 'com.moandjiezana.toml', 'shaded.toml'
-    dependencies {
-        exclude(dependency('org.slf4j:slf4j-api'))
-        exclude(dependency('com.google.code.gson:gson'))
-    }
-
-    archiveBaseName = "${mod_name}"
-    archiveVersion = "${mc_version}-${mod_version}"
-    finalizedBy 'reobfShadowJar'
-}
-
 sourceSets.main.resources { srcDir 'src/generated/resources' }
-assemble.dependsOn shadowJar
 
 // Example for how to get properties into the manifest for reading at runtime.
 jar {
@@ -264,13 +224,15 @@ jar {
 
 // Example configuration to allow publishing using the maven-publish plugin
 // This is the preferred method to reobfuscate your jar file
-jar.finalizedBy('reobfJar')
-jar.finalizedBy('shadowJar')
+//jar.finalizedBy('reobfJar')
+//jar.finalizedBy('shadowJar')
 // However if you are in a multi-project build, dev time needs unobfed jar files, so you can delay the obfuscation until publishing by doing
 // publish.dependsOn('reobfJar')
 reobf {
-    shadowJar {}
+    jarJar { }
 }
+
+tasks.jarJar.finalizedBy('reobfJarJar')
 
 
 publishing {

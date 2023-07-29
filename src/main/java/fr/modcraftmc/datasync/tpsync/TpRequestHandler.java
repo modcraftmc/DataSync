@@ -7,6 +7,8 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.bukkit.Location;
+import org.goldenforge.GoldenForgeLib;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -45,8 +47,13 @@ public class TpRequestHandler {
         ServerPlayer target = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerTargetName), "Target player for teleport request not found");
         ServerPlayer source = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerSourceName), "source player for teleport request not found");
         Vec3 position = target.position();
-        source.teleportTo(position.x, position.y, position.z);
-        source.sendSystemMessage(Component.literal("You have been teleported to " + playerTargetName), false);
+
+        if (GoldenForgeLib.isGoldenForge())
+            GoldenForgeLib.teleportAsync(source, Location.toLocation(target.level, target.position())).thenAccept((isTeleported) -> {
+                if (isTeleported)  source.sendSystemMessage(Component.literal("You have been teleported to " + playerTargetName), false);
+                else source.sendSystemMessage(Component.literal("Error while teleporting to " + playerTargetName), false);
+            });
+        else source.teleportTo(position.x, position.y, position.z);
     }
 
     private static void cleanTpRequest(){

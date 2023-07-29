@@ -150,7 +150,9 @@ repositories {
     maven {
         url "https://maven.architectury.dev/"
     }
-    mavenLocal()
+    maven {
+        url "https://raw.githubusercontent.com/GoldenForge/maven/master/"
+    }
     // Put repositories for dependencies here
     // ForgeGradle automatically adds the Forge maven and Maven Central for you
 
@@ -182,6 +184,7 @@ dependencies {
     implementation(fg.deobf("dev.ftb.mods:ftb-library-forge:${ftb_library_version}")){transitive = false}
     implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
     implementation("dev.ftb.mods:ftb-quests-forge:${ftb_quests_version}"){transitive = false}
+    implementation("org.goldenforge:GoldenForgeLib:1.0")
 
     implementation(group: 'fr.modcraftmc', name: 'modcraft-shared-internals', version: '[2.6,2.7]')
 

@@ -4,3 +4,11 @@ pluginManagement {
         maven { url = 'https://maven.minecraftforge.net/' }
     }
 }
+
+rootProject.name = "DataSync"
+
+include 'datasync-homes'
+include 'datasync-tp'
+include 'datasync-inventory'
+include 'datasync-ftbquests'
+include 'datasync-ftbteams'

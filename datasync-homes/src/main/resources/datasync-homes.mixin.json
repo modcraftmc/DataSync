@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "fr.modcraftmc.datasync.homes.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client" : [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "datasync-homes.refmap.json",
+  "minVersion": "0.8"
+}

@@ -1,0 +1,14 @@
+{
+  "required": true,
+  "package": "fr.modcraftmc.datasync.ftbteams.mixin",
+  "compatibilityLevel": "JAVA_17",
+  "client" : [
+  ],
+  "server": [
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  },
+  "refmap": "datasync-ftbteams.refmap.json",
+  "minVersion": "0.8"
+}

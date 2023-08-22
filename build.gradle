@@ -16,9 +16,9 @@ plugins {
 subprojects {
 
     apply plugin: 'net.minecraftforge.gradle'
-    //apply plugin: 'org.spongepowered.mixin'
+    apply plugin: 'org.spongepowered.mixin'
 
-    println "Setup: " + project.name
+    println "Setup: ${project.name}"
 
     version = "${mc_version}-${mod_version}"
     group = 'fr.modcraftmc.datasync'
@@ -28,6 +28,7 @@ subprojects {
 
     dependencies {
         minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
+        annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
     }
 
     minecraft {
@@ -35,9 +36,35 @@ subprojects {
         accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
     }
 
+    mixin {
+        add sourceSets.main, "${project.name}.refmap.json"
+        config "${project.name}.mixin.json"
+    }
+
+    sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+    jar {
+        manifest {
+            attributes([
+                    "Specification-Title"     : "${project.name}",
+                    "Specification-Vendor"    : "ModcraftMC",
+                    "Specification-Version"   : "${mod_version}",
+                    "Implementation-Title"    : project.name,
+                    "Implementation-Version"  : project.jar.archiveVersion,
+                    "Implementation-Vendor"   : "ModcraftMC",
+                    "Implementation-Timestamp": new Date().format("yyyy-MM-dd'T'HH:mm:ssZ"),
+                    "TweakClass"              : "org.spongepowered.asm.launch.MixinTweaker",
+                    "TweakOrder"              : "0",
+                    "MixinConfigs"            : "${project.name}.mixin.json"
+            ])
+        }
+
+        //rename 'mixin.refmap.json', 'datasync.mixin-refmap.json'
+    }
+
     tasks.register('copyJars', Copy) {
         from jar
-        into "../build/libs/"
+        into "../builds"
     }
-    build.dependsOn copyJars
+    build.finalizedBy copyJars
 }

@@ -29,6 +29,7 @@ subprojects {
     dependencies {
         minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
+        implementation files("../dependency/cross-server-core-1.19.2-1.0.jar")
     }
 
     minecraft {

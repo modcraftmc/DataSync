@@ -2,10 +2,7 @@ package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.networkidentity.SyncServer;
-import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
-
-import java.io.IOException;
+import fr.modcraftmc.datasync.networkdiscovery.SyncServer;
 
 public class AttachServer extends BaseMessage{
     public static final String MESSAGE_NAME = "AttachServer";

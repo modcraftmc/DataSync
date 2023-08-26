@@ -46,14 +46,14 @@ public class SecurityWatcher {
         this.onInsecureEvent.remove(runnable);
     }
 
-    public void setSecure(){
+    private void setSecure(){
         if(this.isSecure) return;
 
         this.isSecure = true;
         onSecureEvent.forEach(Runnable::run);
     }
 
-    public void setInsecure(){
+    private void setInsecure(){
         if(!this.isSecure) return;
 
         this.isSecure = false;

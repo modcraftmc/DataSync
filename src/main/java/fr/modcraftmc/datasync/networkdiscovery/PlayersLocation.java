@@ -1,4 +1,4 @@
-package fr.modcraftmc.datasync.networkidentity;
+package fr.modcraftmc.datasync.networkdiscovery;
 
 import fr.modcraftmc.datasync.DataSync;
 

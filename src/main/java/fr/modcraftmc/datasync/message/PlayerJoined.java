@@ -2,7 +2,6 @@ package fr.modcraftmc.datasync.message;
 
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.networkidentity.SyncServer;
 
 public class PlayerJoined extends BaseMessage{
     public static final String MESSAGE_NAME = "PlayerJoined";

@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.message;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import fr.modcraftmc.datasync.DataSync;
-import fr.modcraftmc.datasync.networkidentity.SyncServer;
+import fr.modcraftmc.datasync.networkdiscovery.SyncServer;
 
 import java.util.ArrayList;
 import java.util.List;

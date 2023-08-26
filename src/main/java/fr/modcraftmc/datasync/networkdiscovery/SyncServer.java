@@ -1,4 +1,4 @@
-package fr.modcraftmc.datasync.networkidentity;
+package fr.modcraftmc.datasync.networkdiscovery;
 
 import fr.modcraftmc.datasync.DataSync;
 import fr.modcraftmc.datasync.message.MessageSender;
@@ -6,7 +6,6 @@ import fr.modcraftmc.datasync.rabbitmq.RabbitmqDirectPublisher;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 public class SyncServer implements MessageSender {

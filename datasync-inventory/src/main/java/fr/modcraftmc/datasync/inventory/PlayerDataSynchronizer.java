@@ -2,9 +2,8 @@ package fr.modcraftmc.datasync.inventory;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.mongodb.CSCMongoWrappers.MongoCollectionWrapper;
-import fr.modcraftmc.crossservercore.mongodb.CSCMongoWrappers.DataWrapper;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
@@ -12,6 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.server.ServerLifecycleHooks;
+import org.bson.Document;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -20,7 +20,7 @@ import java.util.*;
 public class PlayerDataSynchronizer {
     private static List<TemporalPlayerData> playerData = new ArrayList<>();
     private static int keepTime = 30; // seconds to hold data
-    public static MongoCollectionWrapper databasePlayerData;
+    public static MongoCollection<Document> databasePlayerData;
     private static List<ServerPlayer> savablePlayers = new ArrayList<>();
 
     public static void checkSavablePlayers(){
@@ -29,7 +29,7 @@ public class PlayerDataSynchronizer {
     }
 
     public static void checkTemporalPlayerData(){
-        playerData.removeIf(temporalPlayerData -> temporalPlayerData.time + keepTime * 1000 < System.currentTimeMillis());
+        playerData.removeIf(temporalPlayerData -> temporalPlayerData.time + keepTime < System.currentTimeMillis() / 1000);
     }
 
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
@@ -53,15 +53,15 @@ public class PlayerDataSynchronizer {
         checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         if(savablePlayers.contains(player)) {
-            broadcastDataToTransferBuffer(player.getName().getString(), PlayerSerializer.serializePlayer(player));
+            broadcastPlayerDataToTransferBuffer(player.getName().getString(), PlayerSerializer.serializePlayer(player));
         }
     }
 
     private static boolean loadDataFromDatabase(ServerPlayer player, String playerName) {
-        DataWrapper document = databasePlayerData.find(new DataWrapper("name", playerName)).first();
+        Document document = databasePlayerData.find(new Document("name", playerName)).first();
         if (document == null) {
             DatasyncInventory.LOGGER.info(String.format("Creating new data for player %s", playerName));
-            document = new DataWrapper("name", playerName).append("data", "{}");
+            document = new Document("name", playerName).append("data", "{}");
         }
         Gson gson = new Gson();
         JsonObject playerData = gson.fromJson(document.getString("data"), JsonObject.class);
@@ -69,17 +69,16 @@ public class PlayerDataSynchronizer {
         if(!savablePlayers.contains(player))
             savablePlayers.add(player);
         return true;
-
     }
 
     public static void saveDataToDatabase(ServerPlayer player) {
         JsonObject playerData = PlayerSerializer.serializePlayer(player);
         Date date = new Date();
-        DataWrapper document = new DataWrapper("name", player.getName().getString())
+        Document document = new Document("name", player.getName().getString())
                 .append("saveDate", new Timestamp(date.getTime()).toString())
                 .append("data", playerData.toString());
-        databasePlayerData.deleteMany(new DataWrapper("name", player.getName().getString()));
-        if(!databasePlayerData.insertOne(document)){
+        databasePlayerData.deleteMany(new Document("name", player.getName().getString()));
+        if(!databasePlayerData.insertOne(document).wasAcknowledged()){
             DatasyncInventory.LOGGER.error(String.format("Error while saving data for player %s", player.getName().getString()));
         }
     }
@@ -98,7 +97,7 @@ public class PlayerDataSynchronizer {
         return false;
     }
 
-    public static void broadcastDataToTransferBuffer(String playerName, JsonObject data) {
+    public static void broadcastPlayerDataToTransferBuffer(String playerName, JsonObject data) {
         CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new TransferData(playerName, data));
     }
 

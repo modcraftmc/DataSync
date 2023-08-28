@@ -1,0 +1,7 @@
+repositories {
+    maven { url = 'https://raw.githubusercontent.com/GoldenForge/maven/master/' }
+}
+
+dependencies {
+    implementation("org.goldenforge:GoldenForgeLib:1.0")
+}

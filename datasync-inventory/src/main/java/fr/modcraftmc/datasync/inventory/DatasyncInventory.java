@@ -13,15 +13,17 @@ public class DatasyncInventory {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public DatasyncInventory() {
-        LOGGER.info("DatasyncInventory loading");
+        LOGGER.info("DatasyncInventory loading...");
 
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerJoined);
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerSave);
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerLeaved);
 
-        PlayerDataSynchronizer.databasePlayerData = CrossServerCoreAPI.getOrCreateMongoCollection(References.PLAYER_DATA_COLLECTION_NAME);
-        CrossServerCoreAPI.registerCrossMessage(TransferData.MESSAGE_NAME, TransferData::deserialize);
+        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
+            PlayerDataSynchronizer.databasePlayerData = CrossServerCoreAPI.getOrCreateMongoCollection(References.PLAYER_DATA_COLLECTION_NAME);
+            CrossServerCoreAPI.registerCrossMessage(TransferData.MESSAGE_NAME, TransferData::deserialize);
+        });
 
-        LOGGER.info("DatasyncInventory loaded");
+        LOGGER.info("DatasyncInventory loaded !");
     }
 }

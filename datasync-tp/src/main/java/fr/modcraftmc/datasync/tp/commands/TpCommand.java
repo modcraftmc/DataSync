@@ -19,7 +19,7 @@ public class TpCommand extends CommandModule{
                 ));
     }
 
-    private static int tp(CommandSourceStack source, String player) {
+    private int tp(CommandSourceStack source, String player) {
         if(!source.isPlayer()) {
             source.sendFailure(Component.literal("You must be a player to use this command"));
             return 0;

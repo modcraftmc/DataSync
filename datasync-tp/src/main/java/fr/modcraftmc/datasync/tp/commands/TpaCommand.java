@@ -12,40 +12,40 @@ public class TpaCommand extends CommandModule{
     protected void buildCommand() {
         ROOT_COMMANDS.add(Commands.literal("tpa")
                 .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
-                        .executes(context -> {
-                            tpa(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target"));
-                            return 1;
-                        })
+                        .executes(context -> tpa(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
                 ));
         ROOT_COMMANDS.add(Commands.literal("tpaccept")
-                .executes(context -> {
-                    tpaccept(context.getSource());
-                    return 1;
-                })
+                .executes(context -> tpaccept(context.getSource()))
         );
         ROOT_COMMANDS.add(Commands.literal("tpdeny")
-                .executes(context -> {
-                    tpdeny(context.getSource());
-                    return 1;
-                })
+                .executes(context -> tpdeny(context.getSource()))
         );
     }
 
-    private void tpa(CommandSourceStack source, String target) {
-        if(!source.isPlayer())
+    private int tpa(CommandSourceStack source, String target) {
+        if(!source.isPlayer()) {
             source.sendFailure(Component.literal("You must be a player to use this command"));
+            return 0;
+        }
         new TpaRequest(source.getPlayer().getName().getString(), target).fire();
+        return 1;
     }
 
-    private void tpaccept(CommandSourceStack source) {
-        if(!source.isPlayer())
+    private int tpaccept(CommandSourceStack source) {
+        if(!source.isPlayer()) {
             source.sendFailure(Component.literal("You must be a player to use this command"));
+            return 0;
+        }
         TpaRequestHandler.accept(source.getPlayer());
+        return 1;
     }
 
-    private void tpdeny(CommandSourceStack source) {
-        if(!source.isPlayer())
+    private int tpdeny(CommandSourceStack source) {
+        if(!source.isPlayer()) {
             source.sendFailure(Component.literal("You must be a player to use this command"));
+            return 0;
+        }
         TpaRequestHandler.deny(source.getPlayer());
+        return 1;
     }
 }

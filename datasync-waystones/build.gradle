@@ -1,0 +1,3 @@
+dependencies {
+    implementation fg.deobf("curse.maven:waystones-245755:4635420")
+}

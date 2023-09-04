@@ -2,9 +2,7 @@ package fr.modcraftmc.datasync.waystones.message;
 
 import com.google.gson.JsonObject;
 import fr.modcraftmc.crossservercore.message.BaseMessage;
-import fr.modcraftmc.datasync.waystones.WaystoneTpHandler;
-import net.blay09.mods.waystones.api.IWaystone;
-import net.minecraft.server.level.ServerPlayer;
+import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
 import java.util.UUID;
 
@@ -12,26 +10,25 @@ public class TeleportToWaystone extends BaseMessage {
 
     public static final String MESSAGE_NAME = "teleport_to_waystone";
 
-    private String player;
-    private UUID waystone;
+    private String playerName;
+    private UUID waystoneUUID;
 
-    public TeleportToWaystone(String serverPlayer, UUID waystone) {
+    public TeleportToWaystone(String playerName, UUID waystoneUUID) {
         super(MESSAGE_NAME);
-        this.player = serverPlayer;
-        this.waystone = waystone;
+        this.playerName = playerName;
+        this.waystoneUUID = waystoneUUID;
     }
 
     @Override
     protected JsonObject serialize() {
         JsonObject object = super.serialize();
-        object.addProperty("name", player);
-        object.addProperty("WaystoneUUID", waystone.toString());
-
+        object.addProperty("playerName", playerName);
+        object.addProperty("WaystoneUUID", waystoneUUID.toString());
         return object;
     }
 
     public static TeleportToWaystone deserialize(JsonObject json) {
-        return new TeleportToWaystone(json.get("name").getAsString(), UUID.fromString(json.get("WaystoneUUID").getAsString()));
+        return new TeleportToWaystone(json.get("playerName").getAsString(), UUID.fromString(json.get("WaystoneUUID").getAsString()));
     }
 
     @Override
@@ -41,6 +38,6 @@ public class TeleportToWaystone extends BaseMessage {
 
     @Override
     protected void handle() {
-        WaystoneTpHandler.addTp(player, waystone);
+        DatasyncWaystones.waystoneManager.addPendingWaystoneTp(playerName, waystoneUUID);
     }
 }

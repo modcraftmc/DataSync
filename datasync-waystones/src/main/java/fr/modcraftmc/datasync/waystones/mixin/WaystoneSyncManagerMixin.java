@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
 import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.datasync.waystones.message.UpdateWaystoneMessage;
+import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.core.WaystoneSyncManager;
 import net.minecraft.server.MinecraftServer;
@@ -15,6 +15,6 @@ public class WaystoneSyncManagerMixin {
 
     @Inject(method = "sendWaystoneUpdateToAll", at = @At("RETURN"))
     private static void sendMessage(MinecraftServer server, IWaystone waystone, CallbackInfo ci) {
-        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new UpdateWaystoneMessage(waystone));
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
     }
 }

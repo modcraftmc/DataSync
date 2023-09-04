@@ -16,13 +16,13 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 
 import java.util.List;
 
-public class UpdateWaystoneMessage extends BaseMessage {
+public class UpdateWaystone extends BaseMessage {
 
     public static final String MESSAGE_NAME = "update_waystones";
 
     private IWaystone iwaystone;
 
-    public UpdateWaystoneMessage(IWaystone waystone) {
+    public UpdateWaystone(IWaystone waystone) {
         super(MESSAGE_NAME);
         this.iwaystone = waystone;
     }
@@ -37,9 +37,9 @@ public class UpdateWaystoneMessage extends BaseMessage {
         return object;
     }
 
-    public static UpdateWaystoneMessage deserialize(JsonObject json) {
+    public static UpdateWaystone deserialize(JsonObject json) {
         CompoundTag waystoneTag = CompoundTag.CODEC.parse(JsonOps.INSTANCE, json.get("waystone")).result().get();
-        return new UpdateWaystoneMessage(Waystone.read(waystoneTag));
+        return new UpdateWaystone(Waystone.read(waystoneTag));
     }
 
     @Override

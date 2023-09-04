@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.waystones;
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;
-import fr.modcraftmc.datasync.waystones.message.UpdateWaystoneMessage;
+import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
@@ -13,13 +13,14 @@ public class DatasyncWaystones {
 
     public static final String MOD_ID = "datasyncwaystones";
     public static final Logger LOGGER = LogUtils.getLogger();
+    public static final WaystoneManager waystoneManager = new WaystoneManager();
 
     public DatasyncWaystones() {
         LOGGER.info("DatasyncWaystones loading...");
 
-        MinecraftForge.EVENT_BUS.addListener(WaystoneTpHandler::onPlayerJoined);
+        MinecraftForge.EVENT_BUS.addListener(waystoneManager::onPlayerJoined);
         CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            CrossServerCoreAPI.registerCrossMessage(UpdateWaystoneMessage.MESSAGE_NAME, UpdateWaystoneMessage::deserialize);
+            CrossServerCoreAPI.registerCrossMessage(UpdateWaystone.MESSAGE_NAME, UpdateWaystone::deserialize);
             CrossServerCoreAPI.registerCrossMessage(TeleportToWaystone.MESSAGE_NAME, TeleportToWaystone::deserialize);
         });
         LOGGER.info("DatasyncWaystones loaded !");

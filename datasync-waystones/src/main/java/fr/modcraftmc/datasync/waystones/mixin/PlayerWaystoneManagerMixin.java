@@ -21,7 +21,7 @@ import java.util.List;
 @Mixin(value = PlayerWaystoneManager.class, remap = false)
 public class PlayerWaystoneManagerMixin {
 
-    @Inject(method = "tryTeleportToWaystone", at = @At("HEAD"))
+    @Inject(method = "tryTeleportToWaystone", at = @At("HEAD"), cancellable = true)
     private static void checkServer(Entity entity, IWaystone waystone, WarpMode warpMode, @Nullable IWaystone fromWaystone, CallbackInfoReturnable<Either<List<Entity>, WaystoneTeleportError>> cir) {
        String serverName = CrossServerCoreAPI.getServerName();
         if (!waystone.getName().startsWith(serverName + ": ")) {

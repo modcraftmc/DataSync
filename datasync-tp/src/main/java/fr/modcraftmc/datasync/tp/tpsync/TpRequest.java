@@ -23,14 +23,16 @@ public class TpRequest {
 
     public void fire() {
         CrossServerCoreAPI.findPlayer(playerTargetName).ifPresent(targetServer -> {
-            if(!targetServer.getName().equals(CrossServerCoreAPI.getServerName()))
-                sendTransferPlayerProxyOrder(targetServer.getName());
-            targetServer.sendMessage(new TpRequestMessage(this).serializeToString());
+            CrossServerCoreAPI.findPlayer(playerSourceName).ifPresent(sourceServer -> {
+                if(!sourceServer.getName().equals(targetServer.getName()))
+                    sendTransferPlayerProxyOrder(playerSourceName, targetServer.getName());
+                targetServer.sendMessage(new TpRequestMessage(this).serializeToString());
+            });
         });
     }
 
-    private void sendTransferPlayerProxyOrder(String serverName){
-        CrossServerCoreProxyExtensionAPI.transferPlayer(playerSourceName, serverName);
+    private void sendTransferPlayerProxyOrder(String playerToTransfer, String serverName){
+        CrossServerCoreProxyExtensionAPI.transferPlayer(playerToTransfer, serverName);
     }
 
     public String getPlayerSourceName() {

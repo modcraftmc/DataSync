@@ -7,4 +7,5 @@ repositories {
 dependencies {
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}")
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
+    implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[4.9.0]')
 }

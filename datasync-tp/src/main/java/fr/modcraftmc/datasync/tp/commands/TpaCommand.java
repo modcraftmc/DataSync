@@ -1,6 +1,6 @@
 package fr.modcraftmc.datasync.tp.commands;
 
-import fr.modcraftmc.crossservercore.command.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercoreapi.commands.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
 import net.minecraft.commands.CommandSourceStack;

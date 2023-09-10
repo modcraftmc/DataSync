@@ -1,8 +1,8 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
 import com.mojang.datafixers.util.Either;
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.api.WaystoneTeleportError;
@@ -23,11 +23,11 @@ public class PlayerWaystoneManagerMixin {
 
     @Inject(method = "tryTeleportToWaystone", at = @At("HEAD"), cancellable = true)
     private static void checkServer(Entity entity, IWaystone waystone, WarpMode warpMode, @Nullable IWaystone fromWaystone, CallbackInfoReturnable<Either<List<Entity>, WaystoneTeleportError>> cir) {
-       String serverName = CrossServerCoreAPI.getServerName();
+       String serverName = CrossServerCoreAPI.instance.getServerName();
         if (!waystone.getName().startsWith(serverName + ": ")) {
             if (entity instanceof ServerPlayer serverPlayer) {
-                CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new TeleportToWaystone(serverPlayer.getGameProfile().getName(), waystone.getWaystoneUid()));
-                CrossServerCoreProxyExtensionAPI.transferPlayer(serverPlayer.getGameProfile().getName(), waystone.getName().split(": ")[0]);
+                CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new TeleportToWaystone(serverPlayer.getGameProfile().getName(), waystone.getWaystoneUid()));
+                CrossServerCoreProxyExtensionAPI.instance.transferPlayer(serverPlayer.getGameProfile().getName(), waystone.getName().split(": ")[0]);
             }
             cir.setReturnValue(null);
         }

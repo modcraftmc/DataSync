@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.waystones.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercore.message.BaseMessage;
+import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
 import java.util.UUID;
@@ -37,7 +37,7 @@ public class TeleportToWaystone extends BaseMessage {
     }
 
     @Override
-    protected void handle() {
+    public void handle() {
         DatasyncWaystones.waystoneManager.addPendingWaystoneTp(playerName, waystoneUUID);
     }
 }

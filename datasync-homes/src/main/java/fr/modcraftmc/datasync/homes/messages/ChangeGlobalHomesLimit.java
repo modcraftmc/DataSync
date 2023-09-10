@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.homes.messages;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercore.message.BaseMessage;
+import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 
 public class ChangeGlobalHomesLimit extends BaseMessage {
@@ -32,7 +32,7 @@ public class ChangeGlobalHomesLimit extends BaseMessage {
     }
 
     @Override
-    protected void handle() {
+    public void handle() {
         DatasyncHomes.homeManager.setGlobalHomesLimit(limit);
     }
 }

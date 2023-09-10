@@ -1,6 +1,6 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.worldgen.namegen.NameGenerationMode;
 import net.blay09.mods.waystones.worldgen.namegen.NameGenerator;
@@ -15,7 +15,7 @@ public class NameGeneratorMixin {
 
     @Inject(method = "getName", at = @At(value = "RETURN"), cancellable = true)
     public void addServerName(IWaystone waystone, RandomSource rand, NameGenerationMode nameGenerationMode, CallbackInfoReturnable<String> cir) {
-        String serverName = CrossServerCoreAPI.getServerName();
+        String serverName = CrossServerCoreAPI.instance.getServerName();
         cir.setReturnValue(serverName + ": " + cir.getReturnValue());
     }
 }

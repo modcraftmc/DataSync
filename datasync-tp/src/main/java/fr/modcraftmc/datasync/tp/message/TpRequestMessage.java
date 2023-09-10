@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.tp.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercore.message.BaseMessage;
+import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequestHandler;
 
@@ -44,7 +44,7 @@ public class TpRequestMessage extends BaseMessage {
     }
 
     @Override
-    protected void handle() {
+    public void handle() {
         TpRequestHandler.handle(new TpRequest(playerSourceName, playerTargetName, time));
     }
 }

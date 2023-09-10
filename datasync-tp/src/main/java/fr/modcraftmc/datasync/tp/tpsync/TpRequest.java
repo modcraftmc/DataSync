@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;
@@ -22,8 +22,8 @@ public class TpRequest {
     }
 
     public void fire() {
-        CrossServerCoreAPI.findPlayer(playerTargetName).ifPresent(targetServer -> {
-            CrossServerCoreAPI.findPlayer(playerSourceName).ifPresent(sourceServer -> {
+        CrossServerCoreAPI.instance.findPlayer(playerTargetName).ifPresent(targetServer -> {
+            CrossServerCoreAPI.instance.findPlayer(playerSourceName).ifPresent(sourceServer -> {
                 if(!sourceServer.getName().equals(targetServer.getName()))
                     sendTransferPlayerProxyOrder(playerSourceName, targetServer.getName());
                 targetServer.sendMessage(new TpRequestMessage(this).serializeToString());
@@ -32,7 +32,7 @@ public class TpRequest {
     }
 
     private void sendTransferPlayerProxyOrder(String playerToTransfer, String serverName){
-        CrossServerCoreProxyExtensionAPI.transferPlayer(playerToTransfer, serverName);
+        CrossServerCoreProxyExtensionAPI.instance.transferPlayer(playerToTransfer, serverName);
     }
 
     public String getPlayerSourceName() {

@@ -4,9 +4,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoCollection;
-import fr.modcraftmc.crossservercore.CrossServerCore;
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
@@ -38,7 +37,7 @@ public class HomeManager {
 
     public HomeManager() {
         CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            homesCollection = CrossServerCoreAPI.getOrCreateMongoCollection(homesCollectionName);
+            homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
             getGlobalHomesLimitFromDatabase();
         });
     }
@@ -80,8 +79,8 @@ public class HomeManager {
     }
 
     private void tryTeleportPlayerToHome(String playerToTeleport, Home target) {
-        if(!target.server.equals(CrossServerCoreAPI.getServerName())){
-            CrossServerCoreProxyExtensionAPI.transferPlayer(playerToTeleport, target.server);
+        if(!target.server.equals(CrossServerCoreAPI.instance.getServerName())){
+            CrossServerCoreProxyExtensionAPI.instance.transferPlayer(playerToTeleport, target.server);
             addPendingHomeTp(playerToTeleport, target);
         } else {
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -96,7 +95,7 @@ public class HomeManager {
     }
 
     public void addPendingHomeTp(String playerToTeleport, Home home){
-        CrossServerCoreAPI.sendCrossMessageToServer(new HomeTpRequest(playerToTeleport, home), home.server());
+        CrossServerCoreAPI.instance.sendCrossMessageToServer(new HomeTpRequest(playerToTeleport, home), home.server());
     }
 
     public void addPendingHomeTp(HomeTpRequest homeTpRequest) {
@@ -166,7 +165,7 @@ public class HomeManager {
     }
 
     public void createHome(String playerName, String homeName, int x, int y, int z, String dimension) {
-        Home home = new Home(homeName, x, y, z, dimension, CrossServerCoreAPI.getServerName());
+        Home home = new Home(homeName, x, y, z, dimension, CrossServerCoreAPI.instance.getServerName());
         playerHomesDataMap.get(playerName).homes().add(home);
         savePlayerHomesData(playerName);
     }
@@ -192,7 +191,7 @@ public class HomeManager {
 
     public void propagateGlobalHomesLimit(){
         saveGlobalHomesLimitToDatabase();
-        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new ChangeGlobalHomesLimit(maxHomes));
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new ChangeGlobalHomesLimit(maxHomes));
     }
 
     public boolean homeExists(String playerName, String homeName) {

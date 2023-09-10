@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.inventory.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercore.message.BaseMessage;
+import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
 import fr.modcraftmc.datasync.inventory.PlayerDataSynchronizer;
 
 public class TransferData extends BaseMessage {
@@ -36,7 +36,7 @@ public class TransferData extends BaseMessage {
     }
 
     @Override
-    protected void handle() {
+    public void handle() {
         PlayerDataSynchronizer.pushDataToTransferBuffer(playerName, data);
     }
 }

@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.waystones.message;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
-import fr.modcraftmc.crossservercore.message.BaseMessage;
+import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.core.Waystone;
@@ -48,7 +48,7 @@ public class UpdateWaystone extends BaseMessage {
     }
 
     @Override
-    protected void handle() {
+    public void handle() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         WaystoneManager.get(server).addWaystone(iwaystone);
 

@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.networkdiscovery.SyncServer;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
 
 public class TpaRequest {
@@ -20,7 +19,7 @@ public class TpaRequest {
     }
 
     public void fire() {
-        CrossServerCoreAPI.findPlayer(playerTargetName).ifPresent(targetServer -> {
+        CrossServerCoreAPI.instance.findPlayer(playerTargetName).ifPresent(targetServer -> {
             targetServer.sendMessage(new TpaRequestMessage(this).serializeToString());
         });
     }

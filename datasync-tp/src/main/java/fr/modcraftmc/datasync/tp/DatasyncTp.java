@@ -1,12 +1,11 @@
 package fr.modcraftmc.datasync.tp;
 
 import com.mojang.logging.LogUtils;
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.tp.commands.DatasyncTpCommand;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequestHandler;
-import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -24,8 +23,8 @@ public class DatasyncTp {
         MinecraftForge.EVENT_BUS.addListener(TpRequestHandler::onPlayerJoined);
 
         CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            CrossServerCoreAPI.registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
-            CrossServerCoreAPI.registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
+            CrossServerCoreAPI.instance.registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
+            CrossServerCoreAPI.instance.registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
         });
 
         LOGGER.info("DatasyncTp loaded !");

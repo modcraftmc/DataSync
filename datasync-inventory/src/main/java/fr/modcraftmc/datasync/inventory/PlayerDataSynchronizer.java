@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.inventory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoCollection;
-import fr.modcraftmc.crossservercore.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
@@ -98,7 +98,7 @@ public class PlayerDataSynchronizer {
     }
 
     public static void broadcastPlayerDataToTransferBuffer(String playerName, JsonObject data) {
-        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new TransferData(playerName, data));
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new TransferData(playerName, data));
     }
 
     public static void pushDataToTransferBuffer(String playerName, JsonObject data) {

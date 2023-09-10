@@ -2,7 +2,7 @@ package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import fr.modcraftmc.crossservercore.command.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercoreapi.commands.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
 import net.minecraft.ChatFormatting;

@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.tp;
 
 import com.mojang.logging.LogUtils;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.tp.commands.DatasyncTpCommand;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;

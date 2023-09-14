@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
 import io.netty.buffer.Unpooled;
 import net.minecraft.network.FriendlyByteBuf;

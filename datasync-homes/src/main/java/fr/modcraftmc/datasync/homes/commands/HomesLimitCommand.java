@@ -1,8 +1,7 @@
 package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import fr.modcraftmc.crossservercoreapi.commands.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;

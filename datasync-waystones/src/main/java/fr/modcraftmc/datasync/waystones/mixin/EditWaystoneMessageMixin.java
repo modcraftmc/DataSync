@@ -1,6 +1,6 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import net.blay09.mods.waystones.network.message.EditWaystoneMessage;
 import net.minecraft.server.MinecraftServer;
 import org.spongepowered.asm.mixin.Mixin;

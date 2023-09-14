@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.inventory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.mongodb.client.MongoCollection;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
@@ -78,9 +78,7 @@ public class PlayerDataSynchronizer {
                 .append("saveDate", new Timestamp(date.getTime()).toString())
                 .append("data", playerData.toString());
         databasePlayerData.deleteMany(new Document("name", player.getName().getString()));
-        if(!databasePlayerData.insertOne(document).wasAcknowledged()){
-            DatasyncInventory.LOGGER.error(String.format("Error while saving data for player %s", player.getName().getString()));
-        }
+        databasePlayerData.insertOne(document).wasAcknowledged();
     }
 
     private static boolean loadDataFromTransferBuffer(ServerPlayer player, String playerName) {

@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.homes;
 
 import com.mojang.logging.LogUtils;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.homes.commands.DatasyncHomesCommand;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;

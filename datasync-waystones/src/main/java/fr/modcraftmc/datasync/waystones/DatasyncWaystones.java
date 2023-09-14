@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.waystones;
 
 import com.mojang.logging.LogUtils;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;
 import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import net.minecraftforge.common.MinecraftForge;

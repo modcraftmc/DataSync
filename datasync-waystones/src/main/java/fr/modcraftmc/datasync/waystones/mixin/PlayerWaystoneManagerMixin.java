@@ -1,8 +1,8 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
 import com.mojang.datafixers.util.Either;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.api.WaystoneTeleportError;

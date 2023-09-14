@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.waystones.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
 import java.util.UUID;

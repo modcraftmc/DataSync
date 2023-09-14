@@ -1,6 +1,6 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
 
 public class TpaRequest {

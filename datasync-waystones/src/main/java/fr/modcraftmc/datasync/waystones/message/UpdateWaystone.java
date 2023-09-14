@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.waystones.message;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
-import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.core.Waystone;

@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.homes.messages;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import fr.modcraftmc.datasync.homes.HomeManager;
 

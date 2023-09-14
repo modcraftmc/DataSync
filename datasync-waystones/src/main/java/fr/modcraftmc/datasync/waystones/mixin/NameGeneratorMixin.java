@@ -1,6 +1,6 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.worldgen.namegen.NameGenerationMode;
 import net.blay09.mods.waystones.worldgen.namegen.NameGenerator;

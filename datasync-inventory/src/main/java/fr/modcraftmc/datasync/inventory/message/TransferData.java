@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.inventory.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.inventory.PlayerDataSynchronizer;
 
 public class TransferData extends BaseMessage {

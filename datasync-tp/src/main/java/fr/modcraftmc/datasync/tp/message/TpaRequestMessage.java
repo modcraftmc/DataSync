@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.tp.message;
 
 import com.google.gson.JsonObject;
-import fr.modcraftmc.crossservercoreapi.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
 

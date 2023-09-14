@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.inventory;
 
 import com.mojang.logging.LogUtils;
-import fr.modcraftmc.crossservercoreapi.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;

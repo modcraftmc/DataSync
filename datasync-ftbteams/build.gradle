@@ -1,0 +1,18 @@
+repositories{
+    maven {
+        url "https://maven.saps.dev/minecraft"
+        content {
+            includeGroup "dev.ftb.mods"
+        }
+    }
+    maven {
+        url "https://maven.architectury.dev/"
+    }
+}
+
+dependencies{
+    implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[4.9.0]')
+    implementation(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")){transitive = false}
+    implementation(fg.deobf("dev.ftb.mods:ftb-library-forge:${ftb_library_version}")){transitive = false}
+    implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
+}

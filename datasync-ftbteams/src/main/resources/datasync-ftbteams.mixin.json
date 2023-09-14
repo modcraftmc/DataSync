@@ -5,6 +5,9 @@
   "client" : [
   ],
   "server": [
+    "MixinPartyTeam",
+    "MixinTeam",
+    "MixinPlayerGUIOperationMessage"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -27,14 +27,14 @@ subprojects {
     java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
     repositories {
-        maven { url = 'https://maven.modcraftmc.fr/releases' }
+        maven { url = 'https://maven.modcraftmc.fr/snapshots' }
         maven { url "https://cursemaven.com" }
     }
 
     dependencies {
         minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-        implementation('fr.modcraftmc:cross-server-core-api:1.2.3')
+        implementation('fr.modcraftmc:cross-server-core:1.2.3:api')
     }
 
     minecraft {

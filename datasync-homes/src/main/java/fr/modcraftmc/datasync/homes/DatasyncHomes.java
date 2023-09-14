@@ -20,7 +20,6 @@ public class DatasyncHomes {
         LOGGER.info("DatasyncHomes loading...");
 
         MinecraftForge.EVENT_BUS.addListener(homeManager::onPlayerJoined);
-        MinecraftForge.EVENT_BUS.addListener(homeManager::onPlayerLeft);
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
 
         CrossServerCoreAPI.runWhenCSCIsReady(() -> {

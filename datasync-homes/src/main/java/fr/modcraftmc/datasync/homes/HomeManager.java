@@ -39,6 +39,14 @@ public class HomeManager {
         CrossServerCoreAPI.runWhenCSCIsReady(() -> {
             homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
             getGlobalHomesLimitFromDatabase();
+
+            CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, SyncServer) -> {
+                loadPlayerHomesData(playerName);
+            });
+
+            CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, SyncServer) -> {
+                unloadPlayerHomesData(playerName);
+            });
         });
     }
 
@@ -105,8 +113,6 @@ public class HomeManager {
     }
 
     public void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event){
-        loadPlayerHomesData(event.getEntity().getName().getString());
-
         synchronized (pendingHomeTpList) {
             pendingHomeTpList.entrySet().removeIf(pendingHomeTp -> pendingHomeTp.getValue().time() + pendingHomeTpTimeout < (int) System.currentTimeMillis() / 1000);
 
@@ -115,10 +121,6 @@ public class HomeManager {
                 tryTeleportPlayerToHome(event.getEntity().getName().getString(), pendingHomeTp.home());
             }
         }
-    }
-
-    public void onPlayerLeft(PlayerEvent.PlayerLoggedOutEvent event){
-        unloadPlayerHomesData(event.getEntity().getName().getString());
     }
 
     public void loadPlayerHomesData(String player){

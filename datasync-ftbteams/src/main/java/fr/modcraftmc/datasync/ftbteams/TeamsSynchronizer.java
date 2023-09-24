@@ -46,8 +46,6 @@ public class TeamsSynchronizer {
             FTBTeamsLoaded = true;
 
             databaseTeamsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_DATA_COLLECTION_NAME);
-            CrossServerCoreAPI.instance.registerCrossMessage(SyncTeams.MESSAGE_NAME, SyncTeams::deserialize);
-            CrossServerCoreAPI.instance.registerCrossMessage(SyncTeamMessage.MESSAGE_NAME, SyncTeamMessage::deserialize);
 
             TeamManagerEvent.CREATED.register((event) -> {
                 loadTeams();

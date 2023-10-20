@@ -5,7 +5,8 @@
   "client" : [
   ],
   "server": [
-
+    "TeamDataMixin",
+    "FTBQuestsEventHandlerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

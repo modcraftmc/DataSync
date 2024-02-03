@@ -1,12 +1,16 @@
 package fr.modcraftmc.datasync.ftbquests;
 
 import com.mojang.logging.LogUtils;
+import dev.architectury.event.EventResult;
+import dev.ftb.mods.ftbquests.events.ObjectCompletedEvent;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.ftbquests.commands.DatasyncFtbQuestsCommand;
 import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
 import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -18,11 +22,14 @@ public class DatasyncFtbQuests {
 
     public DatasyncFtbQuests() {
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+    }
 
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            CrossServerCoreAPI.instance.registerCrossMessage(SyncQuests.MESSAGE_NAME, SyncQuests::deserialize);
-            CrossServerCoreAPI.instance.registerCrossMessage(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
-        });
+    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        if(!ModList.get().isLoaded(References.FTBQUESTS_MOD_ID)) return;
+        event.getInstance().registerCrossMessage(SyncQuests.MESSAGE_NAME, SyncQuests::deserialize);
+        event.getInstance().registerCrossMessage(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
+        questsSynchronizer.register();
     }
 
     public void commandResister(RegisterCommandsEvent event){

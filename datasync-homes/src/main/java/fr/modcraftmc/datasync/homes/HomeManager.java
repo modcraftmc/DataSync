@@ -35,18 +35,16 @@ public class HomeManager {
     private static int pendingHomeTpTimeout = 120;
     private int maxHomes = 5;
 
-    public HomeManager() {
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
-            getGlobalHomesLimitFromDatabase();
+    public void register() {
+        homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
+        getGlobalHomesLimitFromDatabase();
 
-            CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, SyncServer) -> {
-                loadPlayerHomesData(playerName);
-            });
+        CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, SyncServer) -> {
+            loadPlayerHomesData(playerName);
+        });
 
-            CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, SyncServer) -> {
-                unloadPlayerHomesData(playerName);
-            });
+        CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, SyncServer) -> {
+            unloadPlayerHomesData(playerName);
         });
     }
 

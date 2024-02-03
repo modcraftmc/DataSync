@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync.tp;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.tp.commands.DatasyncTpCommand;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
@@ -20,14 +21,15 @@ public class DatasyncTp {
         LOGGER.info("DatasyncTp loading...");
 
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
         MinecraftForge.EVENT_BUS.addListener(TpRequestHandler::onPlayerJoined);
 
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            CrossServerCoreAPI.instance.registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
-            CrossServerCoreAPI.instance.registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
-        });
-
         LOGGER.info("DatasyncTp loaded !");
+    }
+
+    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        event.getInstance().registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
+        event.getInstance().registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
     }
 
     public void commandResister(RegisterCommandsEvent event){

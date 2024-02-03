@@ -7,11 +7,8 @@ import com.mongodb.client.MongoCollection;
 import dev.architectury.event.EventResult;
 import dev.ftb.mods.ftblibrary.snbt.SNBTCompoundTag;
 import dev.ftb.mods.ftbquests.FTBQuests;
-import dev.ftb.mods.ftbquests.FTBQuestsEventHandler;
 import dev.ftb.mods.ftbquests.events.CustomTaskEvent;
 import dev.ftb.mods.ftbquests.events.ObjectCompletedEvent;
-import dev.ftb.mods.ftbquests.events.ObjectStartedEvent;
-import dev.ftb.mods.ftbquests.gui.RewardNotificationsScreen;
 import dev.ftb.mods.ftbquests.net.SyncQuestsMessage;
 import dev.ftb.mods.ftbquests.net.SyncTeamDataMessage;
 import dev.ftb.mods.ftbquests.quest.*;
@@ -24,19 +21,16 @@ import dev.ftb.mods.ftbquests.quest.task.Task;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import dev.ftb.mods.ftbteams.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.data.Team;
-import dev.ftb.mods.ftbteams.event.TeamManagerEvent;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.datasync.ftbquests.Serialization.SerializationUtil;
 import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
 import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import net.minecraft.client.Minecraft;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.Document;
 
@@ -51,32 +45,17 @@ public class QuestsSynchronizer {
 
     public MongoCollection<Document> databaseTeamsQuestsData;
 
-    public QuestsSynchronizer(){
-        if(!ModList.get().isLoaded(References.FTBQUESTS_MOD_ID)) return;
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            DatasyncFtbQuests.LOGGER.info("FTBQuests is loaded, enabling FTBQuests sync");
-            FTBQuestsLoaded = true;
-
-            databaseTeamsQuestsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
-
-//            ObjectCompletedEvent.GENERIC.register((event) -> {
-//                syncTeamQuests(event.getData());
-//                return EventResult.pass();
-//            });
-//
-//            ObjectStartedEvent.GENERIC.register((event) -> {
-//                syncTeamQuests(event.getData());
-//                return EventResult.pass();
-//            });
-
-            ObjectCompletedEvent.QuestEvent.GENERIC.register((event) -> {
-                syncTeamQuests(event.getData());
-                return EventResult.pass();
-            });
-            ObjectCompletedEvent.TaskEvent.GENERIC.register((event) -> {
-                syncTeamQuests(event.getData());
-                return EventResult.pass();
-            });
+    public void register() {
+        DatasyncFtbQuests.LOGGER.info("FTBQuests is loaded, enabling FTBQuests sync");
+        FTBQuestsLoaded = true;
+        databaseTeamsQuestsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
+        ObjectCompletedEvent.QuestEvent.GENERIC.register((QuestEvent) -> {
+            syncTeamQuests(QuestEvent.getData());
+            return EventResult.pass();
+        });
+        ObjectCompletedEvent.TaskEvent.GENERIC.register((TaskEvent) -> {
+            syncTeamQuests(TaskEvent.getData());
+            return EventResult.pass();
         });
     }
 

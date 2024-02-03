@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync.inventory;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.common.Mod;
@@ -18,12 +19,13 @@ public class DatasyncInventory {
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerJoined);
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerSave);
         MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerLeaved);
-
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            PlayerDataSynchronizer.databasePlayerData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.PLAYER_DATA_COLLECTION_NAME);
-            CrossServerCoreAPI.instance.registerCrossMessage(TransferData.MESSAGE_NAME, TransferData::deserialize);
-        });
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
 
         LOGGER.info("DatasyncInventory loaded !");
+    }
+
+    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        PlayerDataSynchronizer.databasePlayerData = event.getInstance().getOrCreateMongoCollection(References.PLAYER_DATA_COLLECTION_NAME);
+        event.getInstance().registerCrossMessage(TransferData.MESSAGE_NAME, TransferData::deserialize);
     }
 }

@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync.homes;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.homes.commands.DatasyncHomesCommand;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
@@ -21,14 +22,17 @@ public class DatasyncHomes {
 
         MinecraftForge.EVENT_BUS.addListener(homeManager::onPlayerJoined);
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
-
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            CrossServerCoreAPI.instance.registerCrossMessage(HomeTpRequest.MESSAGE_NAME, HomeTpRequest::deserialize);
-            CrossServerCoreAPI.instance.registerCrossMessage(ChangeGlobalHomesLimit.MESSAGE_NAME, ChangeGlobalHomesLimit::deserialize);
-        });
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
 
         LOGGER.info("DatasyncHomes loaded !");
     }
+
+    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        event.getInstance().registerCrossMessage(HomeTpRequest.MESSAGE_NAME, HomeTpRequest::deserialize);
+        event.getInstance().registerCrossMessage(ChangeGlobalHomesLimit.MESSAGE_NAME, ChangeGlobalHomesLimit::deserialize);
+        homeManager.register();
+    }
+
 
     public void commandResister(RegisterCommandsEvent event){
         LOGGER.debug("Registering commands");

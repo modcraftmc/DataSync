@@ -37,42 +37,38 @@ public class TeamsSynchronizer {
     
     public boolean FTBTeamsLoaded = false;
     public MongoCollection<Document> databaseTeamsData;
-    
-    public TeamsSynchronizer(){
-        if (!ModList.get().isLoaded(References.FTBTEAMS_MOD_ID)) return;
 
-        CrossServerCoreAPI.runWhenCSCIsReady(() -> {
-            DatasyncFtbTeam.LOGGER.info("FTBTeams is loaded, enabling FTBTeams sync");
-            FTBTeamsLoaded = true;
+    public void register() {
+        DatasyncFtbTeam.LOGGER.info("FTBTeams is loaded, enabling FTBTeams sync");
+        FTBTeamsLoaded = true;
 
-            databaseTeamsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_DATA_COLLECTION_NAME);
+        databaseTeamsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_DATA_COLLECTION_NAME);
 
-            TeamManagerEvent.CREATED.register((event) -> {
-                loadTeams();
-                CrossServerCoreAPI.instance.getPlayerLocationMap().keySet().forEach(TeamsSynchronizer::setPlayerTeamOnline);
-            });
-            TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
-            TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
-            TeamEvent.PLAYER_CHANGED.register((event) -> {
-                event.getPreviousTeam().ifPresent((team) -> syncTeam(team));
-                syncTeam(event.getTeam());
-            });
-            TeamEvent.ADD_ALLY.register((event) -> syncTeam(event.getTeam()));
-            TeamEvent.REMOVE_ALLY.register((event) -> syncTeam(event.getTeam()));
-            TeamEvent.CREATED.register((event) -> syncTeam(event.getTeam()));
-            TeamEvent.DELETED.register((event) -> removeTeam(event.getTeam()));
+        TeamManagerEvent.CREATED.register((event) -> {
+            loadTeams();
+            CrossServerCoreAPI.instance.getPlayerLocationMap().keySet().forEach(TeamsSynchronizer::setPlayerTeamOnline);
+        });
+        TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
+        TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
+        TeamEvent.PLAYER_CHANGED.register((event) -> {
+            event.getPreviousTeam().ifPresent((team) -> syncTeam(team));
+            syncTeam(event.getTeam());
+        });
+        TeamEvent.ADD_ALLY.register((event) -> syncTeam(event.getTeam()));
+        TeamEvent.REMOVE_ALLY.register((event) -> syncTeam(event.getTeam()));
+        TeamEvent.CREATED.register((event) -> syncTeam(event.getTeam()));
+        TeamEvent.DELETED.register((event) -> removeTeam(event.getTeam()));
 
-            CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, syncServer) -> {
-                if (!FTBTeamsAPI.isManagerLoaded()) return;
-                setPlayerTeamOnline(playerName);
-            });
+        CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, syncServer) -> {
+            if (!FTBTeamsAPI.isManagerLoaded()) return;
+            setPlayerTeamOnline(playerName);
+        });
 
-            //todo: find why this piece of code existed
+        //todo: find why this piece of code existed
 //            CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, syncServer) -> {
 //                if(!FTBTeamsAPI.isManagerLoaded()) return;
 //                setPlayerTeamOnline(playerName);
 //            });
-        });
     }
 
     public void removeTeam(Team team){

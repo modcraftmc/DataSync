@@ -35,7 +35,7 @@ subprojects {
     dependencies {
         minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-        implementation('fr.modcraftmc:cross-server-core:1.2.3:api')
+        implementation('fr.modcraftmc:cross-server-core:1.2.4:api')
     }
 
     minecraft {

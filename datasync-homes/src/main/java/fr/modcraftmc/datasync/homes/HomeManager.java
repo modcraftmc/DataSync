@@ -126,11 +126,17 @@ public class HomeManager {
     }
 
     public void unloadPlayerHomesData(String player){
-        savePlayerHomesData(player);
+        if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(player) != null)
+            savePlayerHomesData(player);
         playerHomesDataMap.remove(player);
     }
 
     public void savePlayerHomesData(String player){
+        if(!playerHomesDataMap.containsKey(player)){
+            DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but it's not loaded", player);
+            return;
+        }
+
         Document document = new Document("player", player).append("homesData", playerHomesDataMap.get(player).serialize().toString());
 
         homesCollection.deleteMany(new Document("player", player));

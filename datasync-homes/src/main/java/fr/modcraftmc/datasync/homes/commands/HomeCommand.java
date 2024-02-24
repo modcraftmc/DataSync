@@ -33,6 +33,7 @@ public class HomeCommand extends CommandModule {
         ROOT_COMMANDS.add(Commands.literal("homes")
                 .executes(context -> showPlayerHomes(context.getSource()))
                 .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
+                        .executes(context -> showPlayerHomes(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), true))
                         .requires(source -> source.hasPermission(4))
                         .then(Commands.argument("playerhome", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(DatasyncHomes.homeManager.getHomeNames(NetworkPlayerArgument.getNetworkPlayer(context, "player")), builder))

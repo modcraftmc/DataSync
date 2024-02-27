@@ -28,7 +28,6 @@ public class MixinPlayerGUIOperationMessage
         if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(targetId) == null && targetName != null){
             try {
                 partyTeam.invite(sourcePlayer, List.of(new GameProfile(targetId, targetName)));
-                TeamsSynchronizer.sendInvitationMessage(targetId, partyTeam, sourcePlayer);
             } catch (CommandSyntaxException e) {
                 throw new RuntimeException(e);
             }

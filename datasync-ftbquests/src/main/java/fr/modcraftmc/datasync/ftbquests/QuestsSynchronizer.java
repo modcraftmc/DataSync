@@ -165,7 +165,7 @@ public class QuestsSynchronizer {
                 chapter.writeData(chapterNBT);
 
                 ListTag questList = new ListTag();
-                for (Quest quest : chapter.quests) {
+                for (Quest quest : chapter.getQuests()) {
                     if (!quest.invalid) {
                         SNBTCompoundTag questNBT = new SNBTCompoundTag();
                         quest.writeData(questNBT);
@@ -182,7 +182,7 @@ public class QuestsSynchronizer {
                 chapterNBT.put("quests", questList);
 
                 ListTag linkList = new ListTag();
-                for (QuestLink link : chapter.questLinks) {
+                for (QuestLink link : chapter.getQuestLinks()) {
                     if (link.getQuest().isPresent()) {
                         SNBTCompoundTag linkNBT = new SNBTCompoundTag();
                         link.writeData(linkNBT);
@@ -288,7 +288,7 @@ public class QuestsSynchronizer {
                     quest.id = questFile.readID(questNBT.get("id"));
                     objectMap.put(quest.id, quest);
                     dataCache.put(quest.id, questNBT);
-                    chapter.quests.add(quest);
+                    chapter.getQuests().add(quest);
 
                     ListTag taskList = questNBT.getList("tasks", Tag.TAG_COMPOUND);
 
@@ -332,7 +332,7 @@ public class QuestsSynchronizer {
                     CompoundTag linkNBT = questLinks.getCompound(x);
                     QuestLink link = new QuestLink(chapter, questFile.readID(linkNBT.get("linked_quest")));
                     link.id = questFile.readID(linkNBT.get("id"));
-                    chapter.questLinks.add(link);
+                    chapter.getQuestLinks().add(link);
                     objectMap.put(link.id, link);
                     dataCache.put(link.id, linkNBT);
                 }
@@ -369,7 +369,7 @@ public class QuestsSynchronizer {
             group.chapters.sort(Comparator.comparingInt(c -> objectOrderMap.get(c.id)));
 
             for (Chapter chapter : group.chapters) {
-                for (Quest quest : chapter.quests) {
+                for (Quest quest : chapter.getQuests()) {
                     quest.removeInvalidDependencies();
                 }
             }

@@ -26,7 +26,7 @@ public class TeamDataMixin {
     }
 
     //add mixin to synchronize quests rewards because no event exist for that
-    @Inject(method = "claimReward(Ljava/util/UUID;Ldev/ftb/mods/ftbquests/quest/reward/Reward;J)Z", at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbquests/quest/TeamData;save()V"))
+    @Inject(method = "claimReward(Ljava/util/UUID;Ldev/ftb/mods/ftbquests/quest/reward/Reward;J)Z", at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbquests/quest/TeamData;markDirty()V"))
     protected void onClaimReward(UUID player, Reward reward, long date, CallbackInfoReturnable<Boolean> cir) {
         DatasyncFtbQuests.questsSynchronizer.syncTeamQuests((TeamData) (Object) this);
     }

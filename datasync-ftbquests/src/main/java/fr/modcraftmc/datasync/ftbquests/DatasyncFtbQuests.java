@@ -30,6 +30,7 @@ public class DatasyncFtbQuests {
         event.getInstance().registerCrossMessage(SyncQuests.MESSAGE_NAME, SyncQuests::deserialize);
         event.getInstance().registerCrossMessage(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
         questsSynchronizer.register();
+        questsSynchronizer.loadTeamsQuests();
     }
 
     public void commandResister(RegisterCommandsEvent event){

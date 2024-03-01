@@ -21,7 +21,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.fml.ModList;
 import org.bson.Document;
 
 import java.io.IOException;
@@ -60,7 +59,13 @@ public class TeamsSynchronizer {
         TeamEvent.DELETED.register((event) -> removeTeam(event.getTeam()));
 
         CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, syncServer) -> {
-            if (!FTBTeamsAPI.isManagerLoaded()) return;
+            if (!FTBTeamsAPI.isManagerLoaded()){
+                TeamManagerEvent.CREATED.register((event) -> {
+                    setPlayerTeamOnline(playerName);
+                });
+
+                return;
+            }
             setPlayerTeamOnline(playerName);
         });
 

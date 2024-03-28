@@ -20,12 +20,21 @@ public class HomesLimitCommand extends CommandModule {
                 .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
                         .executes(context -> showHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))
                         .then(Commands.argument("limit", IntegerArgumentType.integer(0))
-                                .executes(context -> setHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))));
+                                .executes(context -> setHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))
+                        .then(Commands.literal("default")
+                                .executes(context -> unsetHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))))
+        );
     }
 
     private int setHomeLimit(CommandSourceStack source, String player, int limit) {
         DatasyncHomes.homeManager.setPlayerHomesLimit(player, limit);
         source.sendSuccess(Component.literal("The new homes limit for " + player + " is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        return 1;
+    }
+
+    private int unsetHomeLimit(CommandSourceStack source, String player) {
+        DatasyncHomes.homeManager.unsetPlayerHomesLimit(player);
+        source.sendSuccess(Component.literal("The homes limit for " + player + " has been unset").withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 

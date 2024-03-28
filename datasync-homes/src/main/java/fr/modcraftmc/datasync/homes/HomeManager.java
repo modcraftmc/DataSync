@@ -7,7 +7,9 @@ import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
+import fr.modcraftmc.datasync.homes.messages.ChangePlayerHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
+import fr.modcraftmc.datasync.homes.messages.SetHome;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
 import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.core.Registry;
@@ -37,7 +39,7 @@ public class HomeManager {
 
     public void register() {
         homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
-        getGlobalHomesLimitFromDatabase();
+        loadGlobalHomesLimitFromDatabase();
 
         CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, SyncServer) -> {
             loadPlayerHomesData(playerName);
@@ -50,7 +52,11 @@ public class HomeManager {
 
     public List<String> getHomeNames(String player) {
         List<String> homesNames = new ArrayList<>();
-        for (Home home : playerHomesDataMap.get(player).homes()) {
+        HomesData playerHomesData = playerHomesDataMap.get(player);
+        if(playerHomesData == null)
+            return homesNames;
+
+        for (Home home : playerHomesData.homes()) {
             homesNames.add(home.name());
         }
         return homesNames;
@@ -58,6 +64,10 @@ public class HomeManager {
 
     public int getPlayerHomesLimit(String player) {
         return playerHomesDataMap.get(player).homesLimit().orElse(maxHomes);
+    }
+
+    public Optional<Integer> getPlayerHomesLimitOptional(String player){
+        return playerHomesDataMap.get(player).homesLimit();
     }
 
     public int getRemainingHomes(String player) {
@@ -152,15 +162,14 @@ public class HomeManager {
         return new HomesData(Optional.empty(), new ArrayList<>());
     }
 
-    public int getGlobalHomesLimitFromDatabase(){
+    public void loadGlobalHomesLimitFromDatabase(){
         Document document = homesCollection.find(new Document("global", "homesLimit")).first();
         if(document != null){
             int limit = document.getInteger("limit");
             maxHomes = limit;
-            return limit;
+            return;
         }
         saveGlobalHomesLimitToDatabase();
-        return maxHomes;
     }
 
     public void saveGlobalHomesLimitToDatabase(){
@@ -172,23 +181,56 @@ public class HomeManager {
 
     public void createHome(String playerName, String homeName, int x, int y, int z, String dimension) {
         Home home = new Home(homeName, x, y, z, dimension, CrossServerCoreAPI.instance.getServerName());
-        playerHomesDataMap.get(playerName).homes().add(home);
+        addCachedHome(playerName, home);
         savePlayerHomesData(playerName);
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new SetHome(playerName, SetHome.ActionType.SET, home));
+    }
+
+    public void addCachedHome(String playerName, Home home){
+        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+
+        if(playerHomesData != null)
+            playerHomesData.homes().add(home);
     }
 
     public void deleteHome(String playerName, String homeName) {
-        playerHomesDataMap.get(playerName).homes().removeIf(home -> home.name().equals(homeName));
+        removeCachedHome(playerName, homeName);
         savePlayerHomesData(playerName);
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new SetHome(playerName, SetHome.ActionType.DELETE, new Home(homeName, 0, 0, 0, "", "")));
+    }
+
+    public void removeCachedHome(String playerName, String homeName){
+        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+
+        if(playerHomesData != null)
+            playerHomesData.homes().removeIf(home -> home.name().equals(homeName));
     }
 
     public void setPlayerHomesLimit(String playerName, int count){
-        playerHomesDataMap.get(playerName).setHomesLimit(count);
+        setCachedPlayerHomesLimit(playerName, count);
+        propagatePlayerHomesLimit(playerName);
+    }
+
+    public void setCachedPlayerHomesLimit(String playerName, int count){
+        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+        if(playerHomesData != null)
+            playerHomesData.setHomesLimit(count);
+    }
+
+    private void propagatePlayerHomesLimit(String playerName){
         savePlayerHomesData(playerName);
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new ChangePlayerHomesLimit(playerName, getPlayerHomesLimitOptional(playerName)));
     }
 
     public void unsetPlayerHomesLimit(String playerName){
-        playerHomesDataMap.get(playerName).unsetHomesLimit();
-        savePlayerHomesData(playerName);
+        unsetCachedPlayerHomesLimit(playerName);
+        propagateGlobalHomesLimit();
+    }
+
+    public void unsetCachedPlayerHomesLimit(String playerName){
+        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+        if(playerHomesData != null)
+            playerHomesData.unsetHomesLimit();
     }
 
     public void setGlobalHomesLimit(int count){

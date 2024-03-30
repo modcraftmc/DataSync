@@ -107,11 +107,13 @@ public class HomeCommand extends CommandModule {
         List<String> homeNames = DatasyncHomes.homeManager.getHomeNames(playerName);
         MutableComponent message = Component.literal(playerName + "'s homes :").withStyle(style -> style.withColor(ChatFormatting.GOLD));
         for (String homeName : homeNames) {
+
+            String server = DatasyncHomes.homeManager.getHomeByName(playerName, homeName).server();
             message.append("\n");
             if(selfPlayerHomes)
-                message.append(Component.literal(String.format("[%s]", homeName)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] %s(%s)", homeName, ChatFormatting.GRAY, server)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
             else
-                message.append(Component.literal(String.format("[%s]", homeName)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + playerName + " " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] M%s(%s)", homeName, ChatFormatting.GRAY,server)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + playerName + " " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
         }
 
         source.sendSuccess(message, false);

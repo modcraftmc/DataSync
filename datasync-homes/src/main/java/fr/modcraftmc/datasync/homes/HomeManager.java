@@ -62,6 +62,10 @@ public class HomeManager {
         return homesNames;
     }
 
+    public Home getHomeByName(String player, String name) {
+        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
+    }
+
     public int getPlayerHomesLimit(String player) {
         return playerHomesDataMap.get(player).homesLimit().orElse(maxHomes);
     }

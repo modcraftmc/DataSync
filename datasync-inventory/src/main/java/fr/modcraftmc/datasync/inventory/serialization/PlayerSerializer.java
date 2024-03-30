@@ -91,6 +91,10 @@ public class PlayerSerializer {
         loadPlayerAdvancements(jsonObject, player);
         loadPlayerCurios(jsonObject, player);
         loadPlayerInventory(jsonObject, player);
+
+        // also update data for the client
+        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
+        player.onUpdateAbilities();
     }
 
     public static void loadPlayerInventory(JsonObject jsonObject, ServerPlayer player) {

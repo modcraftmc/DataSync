@@ -278,6 +278,10 @@ public class HomeManager {
         }
     }
 
+    public boolean isLocalHome(String player, String homeName) {
+        return getHomeByName(player, homeName).server().equals(CrossServerCoreAPI.instance.getServerName());
+    }
+
     public static class HomesData {
         private Optional<Integer> homesLimit;
         private List<Home> homes;

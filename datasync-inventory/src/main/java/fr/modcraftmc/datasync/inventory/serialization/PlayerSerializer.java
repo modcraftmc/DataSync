@@ -178,6 +178,10 @@ public class PlayerSerializer {
 
     public static void deserializePlayer(JsonObject jsonObject, ServerPlayer player){
         loadPlayer(jsonObject, player);
+
+        // also update data for the client
+        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
+        player.onUpdateAbilities();
     }
 
     public static void loadPlayer(JsonObject jsonObject, ServerPlayer player) {

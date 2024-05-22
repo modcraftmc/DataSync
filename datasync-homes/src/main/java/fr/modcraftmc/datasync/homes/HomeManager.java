@@ -62,6 +62,10 @@ public class HomeManager {
         return homesNames;
     }
 
+    public Home getHomeByName(String player, String name) {
+        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
+    }
+
     public int getPlayerHomesLimit(String player) {
         return playerHomesDataMap.get(player).homesLimit().orElse(maxHomes);
     }
@@ -272,6 +276,10 @@ public class HomeManager {
                     jsonObject.get("server").getAsString()
             );
         }
+    }
+
+    public boolean isLocalHome(String player, String homeName) {
+        return getHomeByName(player, homeName).server().equals(CrossServerCoreAPI.instance.getServerName());
     }
 
     public static class HomesData {

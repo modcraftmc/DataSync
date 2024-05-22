@@ -4,6 +4,7 @@ import com.google.gson.JsonObject;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
+import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class TpaRequestMessage extends BaseMessage {
     public static final String MESSAGE_NAME = "tpa_request_message";
@@ -44,7 +45,7 @@ public class TpaRequestMessage extends BaseMessage {
     }
 
     public TpaRequest getTpaRequest() {
-        return new TpaRequest(playerSourceName, playerTargetName, time);
+        return new TpaRequest(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName), playerTargetName, time);
     }
 
     @Override

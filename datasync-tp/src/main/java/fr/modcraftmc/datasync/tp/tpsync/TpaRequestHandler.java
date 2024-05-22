@@ -23,11 +23,11 @@ public class TpaRequestHandler {
             return;
         }
         tpaRequestBuffer.add(tpaRequest);
-        informPlayer(playerTarget);
+        informPlayer(playerTarget, tpaRequest.getPlayerSourceName());
     }
 
-    private static void informPlayer(ServerPlayer player){
-        Component message = Component.literal("You have received a tpa request from " + player.getName().getString() + ". Click on buttons below to accept or deny the request or type /tpaccept or /tpdeny in chat\n").withStyle(style -> style.withColor(ChatFormatting.GOLD));
+    private static void informPlayer(ServerPlayer player, String playerSourceName) {
+        Component message = Component.literal("You have received a tpa request from " + playerSourceName + ". Click on buttons below to accept or deny the request or type /tpaccept or /tpdeny in chat\n").withStyle(style -> style.withColor(ChatFormatting.GOLD));
         Component acceptButton = Component.literal("[Accept]   ").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpaccept"))).withStyle(style -> style.withColor(ChatFormatting.GREEN));
         Component denyButton = Component.literal("[Deny]").withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/tpdeny"))).withStyle(style -> style.withColor(ChatFormatting.RED));
 

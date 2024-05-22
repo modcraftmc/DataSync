@@ -178,10 +178,6 @@ public class PlayerSerializer {
 
     public static void deserializePlayer(JsonObject jsonObject, ServerPlayer player){
         loadPlayer(jsonObject, player);
-
-        // also update data for the client
-        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
-        player.onUpdateAbilities();
     }
 
     public static void loadPlayer(JsonObject jsonObject, ServerPlayer player) {
@@ -214,6 +210,10 @@ public class PlayerSerializer {
         loadPlayerCurios(jsonObject, player);
 
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
+
+        // also update data for the client
+        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
+        player.onUpdateAbilities();
     }
 
     public static void loadPlayerInventory(ListTag inventoryTag, Inventory inventory){

@@ -2,7 +2,7 @@ package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
 import net.minecraft.ChatFormatting;
@@ -32,17 +32,19 @@ public class HomeCommand extends CommandModule {
 
         ROOT_COMMANDS.add(Commands.literal("homes")
                 .executes(context -> showPlayerHomes(context.getSource()))
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
-                        .executes(context -> showPlayerHomes(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), true))
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(new NetworkPlayerSuggestionProvider())
+                        .executes(context -> showPlayerHomes(context.getSource(), StringArgumentType.getString(context, "player"), true))
                         .requires(source -> source.hasPermission(4))
                         .then(Commands.argument("playerhome", StringArgumentType.word())
-                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(DatasyncHomes.homeManager.getHomeNames(NetworkPlayerArgument.getNetworkPlayer(context, "player")), builder))
-                                .executes(context -> homeTeleport(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), StringArgumentType.getString(context, "playerhome"))))));
+                                .suggests((context, builder) -> SharedSuggestionProvider.suggest(DatasyncHomes.homeManager.getHomeNames(StringArgumentType.getString(context, "player")), builder))
+                                .executes(context -> homeTeleport(context.getSource(), StringArgumentType.getString(context, "player"), StringArgumentType.getString(context, "playerhome"))))));
 
 
         ROOT_COMMANDS.add(Commands.literal("listhomes")
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
-                        .executes(context -> showPlayerHomes(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), false))));
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(new NetworkPlayerSuggestionProvider())
+                        .executes(context -> showPlayerHomes(context.getSource(), StringArgumentType.getString(context, "player"), false))));
 
         ROOT_COMMANDS.add(Commands.literal("sethome")
                 .then(Commands.argument("name", StringArgumentType.word())

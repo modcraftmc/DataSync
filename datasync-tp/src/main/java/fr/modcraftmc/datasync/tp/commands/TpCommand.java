@@ -1,21 +1,22 @@
 package fr.modcraftmc.datasync.tp.commands;
 
-import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequest;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerPlayer;
 
-public class TpCommand extends CommandModule{
+public class TpCommand extends CommandModule {
     @Override
     protected void buildCommand() {
         COMMANDS.add(Commands.literal("tp")
-                .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
-                        .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
-                                .executes(context -> tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target"), NetworkPlayerArgument.getNetworkPlayer(context, "player")))
-                        )
-                        .executes(context -> tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
+                .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(new NetworkPlayerSuggestionProvider())
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .suggests(new NetworkPlayerSuggestionProvider())
+                                .executes(context -> tp(context.getSource(), StringArgumentType.getString(context, "target"), StringArgumentType.getString(context, "player"))))
+                        .executes(context -> tp(context.getSource(), StringArgumentType.getString(context, "target")))
                 ));
     }
 

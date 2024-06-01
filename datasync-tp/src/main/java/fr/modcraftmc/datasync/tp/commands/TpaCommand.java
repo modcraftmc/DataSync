@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.tp.commands;
 
-import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
 import net.minecraft.commands.CommandSourceStack;
@@ -11,8 +12,9 @@ public class TpaCommand extends CommandModule{
     @Override
     protected void buildCommand() {
         ROOT_COMMANDS.add(Commands.literal("tpa")
-                .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
-                        .executes(context -> tpa(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
+                .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(new NetworkPlayerSuggestionProvider())
+                        .executes(context -> tpa(context.getSource(), StringArgumentType.getString(context, "target")))
                 ));
         ROOT_COMMANDS.add(Commands.literal("tpaccept")
                 .executes(context -> tpaccept(context.getSource()))

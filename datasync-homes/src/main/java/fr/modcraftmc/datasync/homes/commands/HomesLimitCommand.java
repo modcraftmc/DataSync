@@ -1,7 +1,8 @@
 package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import com.mojang.brigadier.arguments.StringArgumentType;
+import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -17,12 +18,13 @@ public class HomesLimitCommand extends CommandModule {
                 .executes(context -> showHomeLimit(context.getSource()))
                 .then(Commands.argument("limit", IntegerArgumentType.integer(0))
                         .executes(context -> setHomeLimit(context.getSource(), IntegerArgumentType.getInteger(context, "limit"))))
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
-                        .executes(context -> showHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(new NetworkPlayerSuggestionProvider())
+                        .executes(context -> showHomeLimit(context.getSource(), StringArgumentType.getString(context, "player")))
                         .then(Commands.argument("limit", IntegerArgumentType.integer(0))
-                                .executes(context -> setHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))
+                                .executes(context -> setHomeLimit(context.getSource(), StringArgumentType.getString(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))
                         .then(Commands.literal("default")
-                                .executes(context -> unsetHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))))
+                                .executes(context -> unsetHomeLimit(context.getSource(), StringArgumentType.getString(context, "player")))))
         );
     }
 

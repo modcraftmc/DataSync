@@ -8,4 +8,7 @@ dependencies {
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}")
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${mc_version}-${curios_version}:api")
     implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[4.9.0]')
+
+    implementation("curse.maven:so_backpacks-422301:5102999")
+    implementation("curse.maven:so_core-618298:5296313")
 }

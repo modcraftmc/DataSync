@@ -75,6 +75,6 @@ side="SERVER"
 modId="waystones"
 mandatory=true
 # This version range declares a minimum of the current minecraft version up to but not including the next major version
-versionRange="[11.4.1,11.4.2)"
+versionRange="[11.4.2,11.4.3)"
 ordering="NONE"
 side="SERVER"

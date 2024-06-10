@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync.waystones;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
+import fr.modcraftmc.datasync.waystones.message.DeleteWaystone;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;
 import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import net.minecraftforge.common.MinecraftForge;
@@ -26,5 +27,6 @@ public class DatasyncWaystones {
     public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
         event.getInstance().registerCrossMessage(UpdateWaystone.MESSAGE_NAME, UpdateWaystone::deserialize);
         event.getInstance().registerCrossMessage(TeleportToWaystone.MESSAGE_NAME, TeleportToWaystone::deserialize);
+        event.getInstance().registerCrossMessage(DeleteWaystone.MESSAGE_NAME, DeleteWaystone::deserialize);
     }
 }

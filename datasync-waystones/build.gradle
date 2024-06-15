@@ -1,3 +1,6 @@
 dependencies {
     implementation fg.deobf("curse.maven:waystones-245755:4635420")
+    compileOnly fg.deobf("curse.maven:balm-531761:4751735")
+
+    implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[4.9.0]')
 }

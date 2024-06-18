@@ -207,6 +207,8 @@ public class WaystoneManager {
     private void loadPlayerWaystonesFromDatabase(Player player){
         Document document = databasePlayerWaystonesData.find(new Document("player", player.getName().getString())).first();
         if(document == null) return;
+        String waystones = document.get("waystones").toString();
+        if (waystones.isEmpty()) return;
 
         List<UUID> waystonesUUID = Arrays.stream(document.getString("waystones").split(",")).map(UUID::fromString).toList();
         tryActivateWaystonesForPlayer(player, waystonesUUID);

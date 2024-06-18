@@ -13,6 +13,8 @@ public class WaystoneMixin {
     private static String redirectWriteName(IWaystone instance) {
         DatasyncWaystones.LOGGER.info("Redirecting write name");
         String appendText = DatasyncWaystones.waystoneManager.isWaystoneOnCurrentServer(instance) ? " (l)" : " (r)"; // (l) for local, (r) for remote
+        if(instance.getName().isEmpty())
+            return instance.getName();
         return instance.getName() + appendText;
     }
 }

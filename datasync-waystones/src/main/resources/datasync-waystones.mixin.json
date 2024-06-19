@@ -7,7 +7,7 @@
   "server": [
     "WaystoneSyncManagerMixin",
     "PlayerWaystoneManagerMixin",
-    "WaystoneBlockBaseMixin",
+    "WaystoneManagerMixin",
     "WaystoneMixin"
   ],
   "injectors": {

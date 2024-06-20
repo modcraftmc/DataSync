@@ -63,20 +63,18 @@ public class PlayerDataSynchronizer {
             DatasyncInventory.LOGGER.info(String.format("Creating new data for player %s", playerName));
             document = new Document("name", playerName).append("data", "{}");
         }
-        Gson gson = new Gson();
-        JsonObject playerData = gson.fromJson(document.getString("data"), JsonObject.class);
-        PlayerSerializer.deserializePlayer(playerData, player);
+        PlayerSerializer.deserializePlayer(document.getString("data"), player);
         if(!savablePlayers.contains(player))
             savablePlayers.add(player);
         return true;
     }
 
     public static void saveDataToDatabase(ServerPlayer player) {
-        JsonObject playerData = PlayerSerializer.serializePlayer(player);
+        String playerData = PlayerSerializer.serializePlayer(player);
         Date date = new Date();
         Document document = new Document("name", player.getName().getString())
                 .append("saveDate", new Timestamp(date.getTime()).toString())
-                .append("data", playerData.toString());
+                .append("data", playerData);
         databasePlayerData.deleteMany(new Document("name", player.getName().getString()));
         databasePlayerData.insertOne(document).wasAcknowledged();
     }
@@ -95,27 +93,27 @@ public class PlayerDataSynchronizer {
         return false;
     }
 
-    public static void broadcastPlayerDataToTransferBuffer(String playerName, JsonObject data) {
+    public static void broadcastPlayerDataToTransferBuffer(String playerName, String data) {
         CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new TransferData(playerName, data));
     }
 
-    public static void pushDataToTransferBuffer(String playerName, JsonObject data) {
+    public static void pushDataToTransferBuffer(String playerName, String data) {
         playerData.removeIf(temporalPlayerData -> temporalPlayerData.name.equals(playerName));
         playerData.add(new TemporalPlayerData(playerName, data));
     }
 
     public static class TemporalPlayerData {
         public String name;
-        public JsonObject data;
+        public String data;
         public int time;
 
-        public TemporalPlayerData(String name, JsonObject data, int time) {
+        public TemporalPlayerData(String name, String data, int time) {
             this.name = name;
             this.data = data;
             this.time = time;
         }
 
-        public TemporalPlayerData(String name, JsonObject data) {
+        public TemporalPlayerData(String name, String data) {
             this(name, data, (int) (System.currentTimeMillis() / 1000));
         }
     }

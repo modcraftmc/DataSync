@@ -8,9 +8,9 @@ public class TransferData extends BaseMessage {
     public static final String MESSAGE_NAME = "transfer_data";
 
     public final String playerName;
-    public final JsonObject data;
+    public final String data;
 
-    public TransferData(String playerName, JsonObject data) {
+    public TransferData(String playerName, String data) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.data = data;
@@ -20,13 +20,13 @@ public class TransferData extends BaseMessage {
     protected JsonObject serialize() {
         JsonObject jsonObject = super.serialize();
         jsonObject.addProperty("playerName", playerName);
-        jsonObject.add("data", data);
+        jsonObject.addProperty("data", data);
         return jsonObject;
     }
 
     public static TransferData deserialize(JsonObject json) {
         String playerName = json.get("playerName").getAsString();
-        JsonObject data = json.get("data").getAsJsonObject();
+        String data = json.get("data").getAsString();
         return new TransferData(playerName, data);
     }
 

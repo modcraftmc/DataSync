@@ -3,10 +3,13 @@ package fr.modcraftmc.datasync.inventory.serialization;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
+import net.minecraft.nbt.StringTag;
+import net.minecraft.nbt.Tag;
 import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -25,6 +28,7 @@ import net.p3pp3rf1y.sophisticatedbackpacks.api.CapabilityBackpackWrapper;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageFluidHandler;
 import net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeHandler;
+import org.codehaus.plexus.util.StringOutputStream;
 import top.theillusivec4.curios.api.CuriosCapability;
 
 import java.util.*;
@@ -160,15 +164,18 @@ public class PlayerSerializer {
         }
     }
 
-    public static JsonObject serializePlayer(ServerPlayer player){
-        JsonObject jsonObject = new JsonObject();
+    public static String serializePlayer(ServerPlayer player){
+        CompoundTag result = new CompoundTag();
 
-        savePlayer(player, jsonObject);
+        savePlayer(player, result);
 
-        return jsonObject;
+        String nbt = SerializationUtil.ToString(result);
+        DatasyncInventory.LOGGER.info("Player data : " + result.getAsString());
+        DatasyncInventory.LOGGER.info("Serialized player data: " + nbt);
+        return nbt;
     }
 
-    public static void savePlayer(ServerPlayer player, JsonObject jsonObject){
+    public static void savePlayer(ServerPlayer player, CompoundTag nbt){
         CompoundTag playerTag = new CompoundTag();
         player.getFoodData().addAdditionalSaveData(playerTag);
         playerTag.putFloat("Health", player.getHealth());
@@ -182,9 +189,9 @@ public class PlayerSerializer {
         playerTag.putInt("Score", player.getScore());
         player.getAbilities().addSaveData(playerTag);
         playerTag.put("EnderItems", player.getEnderChestInventory().createTag());
-        jsonObject.add(PLAYER_DATA_IDENTIFIER, SerializationUtil.ToJsonElement(playerTag));
-        savePlayerCurios(player, jsonObject);
-        savePlayerAdvancements(player, jsonObject);
+        nbt.put(PLAYER_DATA_IDENTIFIER, playerTag);
+        savePlayerCurios(player, nbt);
+        savePlayerAdvancements(player, nbt);
     }
 
     public static ListTag savePlayerInventory(Inventory inventory){
@@ -215,60 +222,53 @@ public class PlayerSerializer {
         return itemTag;
     }
 
-    public static void savePlayerCurios(Player player, JsonObject jsonObject){
+    public static void savePlayerCurios(Player player, CompoundTag nbt){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)) {
             player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                JsonArray curiosArray = new JsonArray();
-
-                ListTag listTag = itemHandler.saveInventory(false);
-                for (int i = 0; i < listTag.size(); i++) {
-                    curiosArray.add(SerializationUtil.ToJsonElement(listTag.getCompound(i)));
-                }
-                jsonObject.add(CURIOS_INVENTORY_IDENTIFIER, curiosArray);
+                ListTag curiosInventory = itemHandler.saveInventory(false);
+                nbt.put(CURIOS_INVENTORY_IDENTIFIER, curiosInventory);
             });
         }
     }
 
-    public static void savePlayerAdvancements(ServerPlayer player, JsonObject jsonObject){
+    public static void savePlayerAdvancements(ServerPlayer player, CompoundTag nbt){
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
 
-        JsonArray advancementsArray = new JsonArray();
+        ListTag advancementsArray = new ListTag();
         server.getAdvancements().getAllAdvancements().forEach(advancement -> {
-            JsonArray criteriaArray = new JsonArray();
+            ListTag criteriaArray = new ListTag();
             server.getPlayerList().getPlayerAdvancements(player).getOrStartProgress(advancement).getCompletedCriteria().forEach(criterion -> {
-                criteriaArray.add(criterion);
+                criteriaArray.add(StringTag.valueOf(criterion));
             });
             if(criteriaArray.size() == 0) return;
 
-            JsonObject advancementObject = new JsonObject();
-            advancementObject.addProperty("advancement", advancement.getId().toString());
-            advancementObject.add("criteria", criteriaArray);
+            CompoundTag advancementNBT = new CompoundTag();
+            advancementNBT.putString("advancement", advancement.getId().toString());
+            advancementNBT.put("criteria", criteriaArray);
 
-            advancementsArray.add(advancementObject);
+            advancementsArray.add(advancementNBT);
         });
 
-        jsonObject.add("advancements", advancementsArray);
+        nbt.put("advancements", advancementsArray);
     }
 
-    public static void deserializePlayer(JsonObject jsonObject, ServerPlayer player){
-        loadPlayer(jsonObject, player);
+    public static void deserializePlayer(String nbt, ServerPlayer player){
+        CompoundTag compoundTag = SerializationUtil.ToNbt(nbt);
+        loadPlayer(compoundTag, player);
     }
 
-    public static void loadPlayer(JsonObject jsonObject, ServerPlayer player) {
-        JsonElement playerData = jsonObject.get(PLAYER_DATA_IDENTIFIER);
-        if(playerData == null) return;
-
-        CompoundTag playerTag = SerializationUtil.GetNbt(playerData);
+    public static void loadPlayer(CompoundTag nbt, ServerPlayer player) {
+        CompoundTag playerTag = nbt.getCompound(PLAYER_DATA_IDENTIFIER);
 
         player.getFoodData().readAdditionalSaveData(playerTag);
         player.setAbsorptionAmount(playerTag.getFloat("AbsorptionAmount"));
-        if (playerTag.contains("Attributes", 9) && player.level != null && !player.level.isClientSide) {
-            player.getAttributes().load(playerTag.getList("Attributes", 10));
+        if (playerTag.contains("Attributes", Tag.TAG_LIST) && player.level != null && !player.level.isClientSide) {
+            player.getAttributes().load(playerTag.getList("Attributes", Tag.TAG_COMPOUND));
         }
-        if (playerTag.contains("Health", 99)) {
+        if (playerTag.contains("Health", Tag.TAG_ANY_NUMERIC)) {
             player.setHealth(playerTag.getFloat("Health"));
         }
-        ListTag listtag = playerTag.getList("Inventory", 10);
+        ListTag listtag = playerTag.getList("Inventory", Tag.TAG_COMPOUND);
         loadPlayerInventory(listtag, player.getInventory());
         player.getInventory().selected = playerTag.getInt("SelectedItemSlot");
         player.experienceProgress = playerTag.getFloat("XpP");
@@ -276,12 +276,12 @@ public class PlayerSerializer {
         player.totalExperience = playerTag.getInt("XpTotal");
         player.setScore(playerTag.getInt("Score"));
         player.getAbilities().loadSaveData(playerTag);
-        if (playerTag.contains("EnderItems", 9)) {
-            player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", 10));
+        if (playerTag.contains("EnderItems", Tag.TAG_LIST)) {
+            player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", Tag.TAG_COMPOUND));
         }
 
-        loadPlayerAdvancements(jsonObject, player);
-        loadPlayerCurios(jsonObject, player);
+        loadPlayerAdvancements(nbt, player);
+        loadPlayerCurios(nbt, player);
 
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
 
@@ -312,40 +312,32 @@ public class PlayerSerializer {
         return stack;
     }
 
-    public static void loadPlayerCurios(JsonObject jsonObject, Player player){
+    public static void loadPlayerCurios(CompoundTag nbt, Player player){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)){
-            JsonArray curiosArray = jsonObject.getAsJsonArray(CURIOS_INVENTORY_IDENTIFIER);
-            if(curiosArray != null){
-
-                ListTag listTag = new ListTag();
-                for (int i = 0; i < curiosArray.size(); i++) {
-                    listTag.add(SerializationUtil.GetNbt(curiosArray.get(i)));
-                }
-
-                player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                    itemHandler.saveInventory(true);
-                    itemHandler.loadInventory(listTag);
-                });
-            }
+            ListTag curiosInventory = nbt.getList(CURIOS_INVENTORY_IDENTIFIER, Tag.TAG_COMPOUND);
+            player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
+                itemHandler.saveInventory(true);
+                itemHandler.loadInventory(curiosInventory);
+            });
         }
     }
 
-    public static void loadPlayerAdvancements(JsonObject jsonObject, ServerPlayer player){
+    public static void loadPlayerAdvancements(CompoundTag nbt, ServerPlayer player){
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-        JsonArray advancementsArray = jsonObject.getAsJsonArray("advancements");
+        ListTag advancementsArray = nbt.getList("advancements", 10);
         Map<ResourceLocation, List<String>> completedAdvancements = new HashMap<>();
         if(advancementsArray == null) return;
-        advancementsArray.forEach(advancementElement -> {
-            JsonObject advancementJson = advancementElement.getAsJsonObject();
+        for (int i = 0; i < advancementsArray.size(); i++) {
+            CompoundTag advancementElement = advancementsArray.getCompound(i);
             List<String> completedCriteria = new ArrayList<>();
 
-            JsonArray criteriaArray = advancementJson.getAsJsonArray("criteria");
-            criteriaArray.forEach(criterionElement -> {
-                completedCriteria.add(criterionElement.getAsString());
-            });
+            ListTag criteriaArray = advancementElement.getList("criteria", 8);
+            for (int j = 0; j < criteriaArray.size(); j++) {
+                completedCriteria.add(criteriaArray.getString(j));
+            }
 
-            completedAdvancements.put(new ResourceLocation(advancementJson.get("advancement").getAsString()), completedCriteria);
-        });
+            completedAdvancements.put(new ResourceLocation(((StringTag) advancementElement.get("advancement")).getAsString()), completedCriteria);
+        }
 
         PlayerAdvancements playerAdvancements = server.getPlayerList().getPlayerAdvancements(player);
         server.getAdvancements().getAllAdvancements().forEach(advancement -> {

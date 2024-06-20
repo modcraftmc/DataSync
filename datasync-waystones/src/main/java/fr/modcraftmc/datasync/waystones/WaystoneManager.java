@@ -137,7 +137,6 @@ public class WaystoneManager {
     }
 
     public boolean isWaystoneOnCurrentServer(IWaystone waystone) {
-        DatasyncWaystones.LOGGER.info("WaystoneManager.isWaystoneOnCurrentServer (" + waystone.getWaystoneUid() + ") : " + getWaystoneServer(waystone.getWaystoneUid()) + " == " + CrossServerCoreAPI.instance.getServerName());
         if(getWaystoneServer(waystone) == null)
             return false;
         return getWaystoneServer(waystone.getWaystoneUid()).equals(CrossServerCoreAPI.instance.getServerName());

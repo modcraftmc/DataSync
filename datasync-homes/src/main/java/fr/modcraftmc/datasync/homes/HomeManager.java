@@ -147,7 +147,7 @@ public class HomeManager {
 
     public void savePlayerHomesData(String player){
         if(!playerHomesDataMap.containsKey(player)){
-            DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but it's not loaded", player);
+            DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but player isn't loaded", player);
             return;
         }
 

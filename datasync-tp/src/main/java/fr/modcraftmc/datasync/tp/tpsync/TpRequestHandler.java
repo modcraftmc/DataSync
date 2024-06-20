@@ -20,7 +20,6 @@ public class TpRequestHandler {
     public static final int tpTimeout = 20; //time in second before tp request expire
 
     public static void handle(TpRequest tpRequest){
-        DatasyncTp.LOGGER.debug("Handling tp request from " + tpRequest.getPlayerSourceName() + " to " + tpRequest.getPlayerTargetName());
         String playerSourceName = tpRequest.getPlayerSourceName();
         if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName) != null){
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
@@ -44,7 +43,6 @@ public class TpRequestHandler {
     }
 
     private static void teleportPlayer(MinecraftServer server, String playerSourceName, String playerTargetName){
-        DatasyncTp.LOGGER.debug("Teleporting player " + playerSourceName + " to " + playerTargetName);
         ServerPlayer target = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerTargetName), "Target player for teleport request not found");
         ServerPlayer source = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerSourceName), "source player for teleport request not found");
         Vec3 position = target.position();

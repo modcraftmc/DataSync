@@ -53,7 +53,6 @@ public class UpdateWaystone extends BaseMessage {
 
     @Override
     public void handle() {
-        DatasyncWaystones.LOGGER.info("Updating waystone " + iwaystone.getWaystoneUid() + " (" + iwaystone.getName() + ")");
         DatasyncWaystones.waystoneManager.enableWaystone(iwaystone, serverName);
     }
 }

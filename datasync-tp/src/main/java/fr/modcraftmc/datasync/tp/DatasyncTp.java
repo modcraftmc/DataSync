@@ -33,7 +33,6 @@ public class DatasyncTp {
     }
 
     public void commandResister(RegisterCommandsEvent event){
-        DatasyncTp.LOGGER.debug("Registering commands");
         new DatasyncTpCommand(event.getDispatcher());
     }
 }

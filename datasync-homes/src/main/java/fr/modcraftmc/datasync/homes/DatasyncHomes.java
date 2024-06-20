@@ -38,7 +38,6 @@ public class DatasyncHomes {
 
 
     public void commandResister(RegisterCommandsEvent event){
-        LOGGER.debug("Registering commands");
         new DatasyncHomesCommand(event.getDispatcher());
     }
 }

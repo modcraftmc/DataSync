@@ -170,8 +170,6 @@ public class PlayerSerializer {
         savePlayer(player, result);
 
         String nbt = SerializationUtil.ToString(result);
-        DatasyncInventory.LOGGER.info("Player data : " + result.getAsString());
-        DatasyncInventory.LOGGER.info("Serialized player data: " + nbt);
         return nbt;
     }
 

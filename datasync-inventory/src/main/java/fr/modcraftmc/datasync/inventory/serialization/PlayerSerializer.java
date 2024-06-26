@@ -1,9 +1,5 @@
 package fr.modcraftmc.datasync.inventory.serialization;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
 import net.minecraft.nbt.CompoundTag;
@@ -23,13 +19,16 @@ import net.minecraftforge.energy.IEnergyStorage;
 import net.minecraftforge.fluids.FluidStack;
 import net.minecraftforge.fluids.capability.IFluidHandler;
 import net.minecraftforge.fml.ModList;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import net.p3pp3rf1y.sophisticatedbackpacks.api.CapabilityBackpackWrapper;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageFluidHandler;
 import net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeHandler;
-import org.codehaus.plexus.util.StringOutputStream;
 import top.theillusivec4.curios.api.CuriosCapability;
+import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
+import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
 
 import java.util.*;
 import java.util.function.BiConsumer;
@@ -197,14 +196,14 @@ public class PlayerSerializer {
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             if(inventory.getItem(i).isEmpty()) continue;
             ItemStack stack = inventory.getItem(i);
-            CompoundTag itemTag = getItemTagWithCapabilities(stack, CAPABILITIES_TO_SAVE_BY_DEFAULT);
+            CompoundTag itemTag = saveItemStackWithCapabilities(stack, CAPABILITIES_TO_SAVE_BY_DEFAULT);
             itemTag.putInt("Slot", i);
             inventoryTag.add(itemTag);
         }
         return inventoryTag;
     }
 
-    public static CompoundTag getItemTagWithCapabilities(ItemStack stack, List<Capability> capabilities){
+    public static CompoundTag saveItemStackWithCapabilities(ItemStack stack, List<Capability> capabilities){
         CompoundTag itemTag = stack.save(new CompoundTag());
         CompoundTag capabilitiesTag = new CompoundTag();
         capabilities.forEach(capability -> {
@@ -220,10 +219,50 @@ public class PlayerSerializer {
         return itemTag;
     }
 
+    public static CompoundTag saveItemHandlerWithCapabilities(IItemHandler handler){
+        CompoundTag handlerTag = new CompoundTag();
+        ListTag itemList = new ListTag();
+        for (int i = 0; i < handler.getSlots(); i++) {
+            ItemStack stack = handler.getStackInSlot(i);
+            if(stack.isEmpty()) continue;
+            CompoundTag itemTag = saveItemStackWithCapabilities(stack, CAPABILITIES_TO_SAVE_BY_DEFAULT);
+            itemTag.putInt("Slot", i);
+            itemList.add(itemTag);
+        }
+
+        handlerTag.put("Items", itemList);
+        handlerTag.putInt("Size", handler.getSlots());
+        return handlerTag;
+    }
+
+    public static ItemStackHandler loadItemHandlerWithCapabilities(CompoundTag handlerTag){
+        ItemStackHandler handler = new ItemStackHandler(handlerTag.getInt("Size"));
+        ListTag itemList = handlerTag.getList("Items", Tag.TAG_COMPOUND);
+        for (int i = 0; i < itemList.size(); i++) {
+            CompoundTag itemTag = itemList.getCompound(i);
+            handler.setStackInSlot(itemTag.getInt("Slot"), loadItemStackWithCapabilities(itemTag, CAPABILITIES_TO_SAVE_BY_DEFAULT));
+        }
+
+        return handler;
+    }
+
     public static void savePlayerCurios(Player player, CompoundTag nbt){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)) {
             player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                ListTag curiosInventory = itemHandler.saveInventory(false);
+                // from curios - start
+                ListTag curiosInventory = new ListTag();
+                for (Map.Entry<String, ICurioStacksHandler> entry : itemHandler.getCurios().entrySet()) {
+                    CompoundTag tag = new CompoundTag();
+                    ICurioStacksHandler stacksHandler = entry.getValue();
+                    IDynamicStackHandler stacks = stacksHandler.getStacks();
+                    IDynamicStackHandler cosmetics = stacksHandler.getCosmeticStacks();
+                    tag.put("Stacks", saveItemHandlerWithCapabilities(stacks));
+                    tag.put("Cosmetics", saveItemHandlerWithCapabilities(cosmetics));
+                    tag.putString("Identifier", entry.getKey());
+                    curiosInventory.add(tag);
+                }
+                // from curios - end
+
                 nbt.put(CURIOS_INVENTORY_IDENTIFIER, curiosInventory);
             });
         }
@@ -310,12 +349,46 @@ public class PlayerSerializer {
         return stack;
     }
 
+    //from Curios
+    private static void loadStacks(ICurioStacksHandler stacksHandler, ItemStackHandler loaded,
+                            IDynamicStackHandler stacks) {
+        for (int j = 0; j < stacksHandler.getSlots() && j < loaded.getSlots(); j++) {
+            ItemStack loadedStack = loaded.getStackInSlot(j);
+
+            stacks.setStackInSlot(j, loadedStack);
+        }
+    }
+
     public static void loadPlayerCurios(CompoundTag nbt, Player player){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)){
             ListTag curiosInventory = nbt.getList(CURIOS_INVENTORY_IDENTIFIER, Tag.TAG_COMPOUND);
             player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
                 itemHandler.saveInventory(true);
-                itemHandler.loadInventory(curiosInventory);
+                // from curios - start
+                for (int i = 0; i < curiosInventory.size(); i++) {
+                    CompoundTag tag = curiosInventory.getCompound(i);
+                    String identifier = tag.getString("Identifier");
+                    ICurioStacksHandler stacksHandler = itemHandler.getCurios().get(identifier);
+
+                    if (stacksHandler != null) {
+                        CompoundTag stacksData = tag.getCompound("Stacks");
+                        ItemStackHandler loaded = loadItemHandlerWithCapabilities(stacksData);
+                        IDynamicStackHandler stacks = stacksHandler.getStacks();
+
+                        if (!stacksData.isEmpty()) {
+                            loadStacks(stacksHandler, loaded, stacks);
+                        }
+
+                        stacksData = tag.getCompound("Cosmetics");
+                        loaded = loadItemHandlerWithCapabilities(stacksData);
+                        stacks = stacksHandler.getCosmeticStacks();
+
+                        if (!stacksData.isEmpty()) {
+                            loadStacks(stacksHandler, loaded, stacks);
+                        }
+                    }
+                }
+                // from curios - end
             });
         }
     }

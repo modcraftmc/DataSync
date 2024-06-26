@@ -23,7 +23,7 @@ public class UpdateWaystone extends BaseMessage {
         this(waystone, CrossServerCoreAPI.instance.getServerName());
     }
 
-    public UpdateWaystone(IWaystone waystone, String serverName) {
+    private UpdateWaystone(IWaystone waystone, String serverName) {
         super(MESSAGE_NAME);
         this.iwaystone = waystone;
         this.serverName = serverName;

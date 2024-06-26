@@ -6,6 +6,7 @@ import fr.modcraftmc.datasync.waystones.message.DeleteWaystone;
 import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.core.WaystoneManager;
+import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -15,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class WaystoneManagerMixin {
     @Inject(method = "addWaystone", at = @At("HEAD"))
     protected void addWaystoneServer(IWaystone waystone, CallbackInfo ci) {
-        DatasyncWaystones.waystoneManager.setWaystoneServer(waystone, CrossServerCoreAPI.instance.getServerName());
+        //DatasyncWaystones.waystoneManager.setWaystoneServer(waystone, CrossServerCoreAPI.instance.getServerName());
     }
 
     @Inject(method = "updateWaystone", at = @At("HEAD"))
@@ -25,7 +26,8 @@ public class WaystoneManagerMixin {
 
     @Inject(method = "removeWaystone", at = @At("HEAD"))
     protected void removeWaystoneServer(IWaystone waystone, CallbackInfo ci) {
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new DeleteWaystone(waystone));
+        if(WaystoneManager.get(ServerLifecycleHooks.getCurrentServer()).getWaystoneById(waystone.getWaystoneUid()).isPresent())
+            CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new DeleteWaystone(waystone));
         DatasyncWaystones.waystoneManager.dropWaystoneServer(waystone);
     }
 }

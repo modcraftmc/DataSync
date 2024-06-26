@@ -2,10 +2,13 @@ package fr.modcraftmc.datasync.waystones;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.JsonOps;
 import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
-import fr.modcraftmc.datasync.waystones.message.WaystonesData;
+import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
+import fr.modcraftmc.datasync.waystones.message.PlayerWaystonesData;
+import fr.modcraftmc.datasync.waystones.message.WaystoneRecovery;
 import net.blay09.mods.waystones.api.IWaystone;
 import net.blay09.mods.waystones.core.*;
 import net.minecraft.nbt.CompoundTag;
@@ -20,12 +23,14 @@ import net.minecraftforge.server.ServerLifecycleHooks;
 import org.bson.Document;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class WaystoneManager {
 
     private final Map<String, PendingWaytoneTp> pendingWaytoneTpBuffer = new HashMap<>();
     private final Map<String, PendingWaystoneData> pendingWaystoneDataBuffer = new HashMap<>();
-    public final Map<IWaystone, String> waystoneServerMap = new HashMap<>();
+    public final Map<UUID, Pair<String, IWaystone>> waystoneServerMap = new ConcurrentHashMap<>();
     public static final int pendingWaystoneTpTimeout = 60; //time in second before tp request expire
     public static final int pendingWaystoneDataTimeout = 60; //time in second before tp request expire
     public static MongoCollection<Document> databaseWaystonesData;
@@ -113,7 +118,7 @@ public class WaystoneManager {
     }
 
     public void onServerStop(ServerStoppingEvent event) {
-        saveWaystonesDataToDatabase();
+        saveAllWaystonesDataToDatabase();
     }
 
     public void initialiseDatabaseConnection() {
@@ -122,18 +127,20 @@ public class WaystoneManager {
     }
 
     public void setWaystoneServer(IWaystone waystone, String serverName) {
-        dropWaystoneServer(waystone);
-        waystoneServerMap.put(waystone, serverName);
+        DatasyncWaystones.LOGGER.info("adding waystone : "+ waystone.getName() + " to server : " + serverName);
+        var previousValue = waystoneServerMap.put(waystone.getWaystoneUid(), new Pair<>(serverName, waystone));
+        if(previousValue == null ) //waystone was not in the map
+            saveAllWaystonesDataToDatabase();
     }
 
     public void dropWaystoneServer(IWaystone waystone) {
-        var entries = waystoneServerMap.entrySet();
-        for (var entry : entries) {
-            if (entry.getKey().getWaystoneUid().equals(waystone.getWaystoneUid())) {
-                waystoneServerMap.remove(entry.getKey());
-                return;
-            }
-        }
+        Optional.ofNullable(waystoneServerMap.remove(waystone.getWaystoneUid())).ifPresent(serverWaystonePair -> {
+            String previousServer = serverWaystonePair.getFirst();
+            if(CrossServerCoreAPI.instance.getServerName().equals(previousServer))
+                removeWaystoneDataFromDatabase(waystone);
+            DatasyncWaystones.LOGGER.info("removed waystone : " + waystone.getName() + " from server : " + previousServer);
+        });
+
     }
 
     public boolean isWaystoneOnCurrentServer(IWaystone waystone) {
@@ -143,27 +150,80 @@ public class WaystoneManager {
     }
 
     private String getWaystoneServer(UUID waystoneUUID){
-        var entries = waystoneServerMap.entrySet();
-        for (var entry : entries) {
-            if (entry.getKey().getWaystoneUid().equals(waystoneUUID)) {
-                return entry.getValue();
-            }
-        }
+        return getWaystoneServer(waystoneUUID, true);
+    }
+
+    private String getWaystoneServer(UUID waystoneUUID, boolean tryRecovery){
+        if(waystoneServerMap.containsKey(waystoneUUID))
+            return waystoneServerMap.get(waystoneUUID).getFirst();
+
+        if(tryRecovery)
+            performWaystoneRecovery(waystoneUUID, true);
 
         return null;
     }
 
-    private void saveWaystonesDataToDatabase(){
-        waystoneServerMap.forEach((waystone, server) -> {
-            String waystoneUUID = waystone.getWaystoneUid().toString();
-            Document document = new Document("uuid", waystoneUUID);
-            CompoundTag tag = new CompoundTag();
-            Waystone.write(waystone, tag);
-            document.append("waystone", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, tag).result().get().toString());
-            document.append("server", server);
+    public void onRecoveryAsked(UUID waystoneUUID){
+        if(CrossServerCoreAPI.instance.getServerName().equals(getWaystoneServer(waystoneUUID, false))){ // if the waystone is on the current server
+            IWaystone waystone = waystoneServerMap.get(waystoneUUID).getSecond();
+            CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
+            return;
+        }
 
-            databaseWaystonesData.deleteOne(new Document("uuid", waystoneUUID));
-            databaseWaystonesData.insertOne(document);
+        performWaystoneRecovery(waystoneUUID, false);
+    }
+
+    public void performWaystoneRecovery(UUID waystoneUUID, boolean askOtherServers){
+        DatasyncWaystones.LOGGER.warn("Waystone not found: " + waystoneUUID + ", the waystone was not found in the database, trying to find it in the world.");
+
+        net.blay09.mods.waystones.core.WaystoneManager waystoneManager = net.blay09.mods.waystones.core.WaystoneManager.get(ServerLifecycleHooks.getCurrentServer());
+        AtomicBoolean recovered = new AtomicBoolean(false);
+        waystoneManager.getWaystoneById(waystoneUUID).ifPresent(waystone -> {
+            waystoneManager.getWaystoneAt(ServerLifecycleHooks.getCurrentServer().getLevel(waystone.getDimension()), waystone.getPos()).ifPresent(
+                    waystone1 -> {
+                        if(!waystone1.getWaystoneUid().equals(waystoneUUID)) return;
+
+                        DatasyncWaystones.LOGGER.info("Waystone found in the world. Recovering it.");
+                        setWaystoneServer(waystone1, CrossServerCoreAPI.instance.getServerName());
+                        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone1));
+                        recovered.set(true);
+                    }
+            );
+        });
+
+        if(recovered.get())
+            return;
+
+        DatasyncWaystones.LOGGER.error("Unable to recover waystone from the world.");
+        if(askOtherServers) {
+            DatasyncWaystones.LOGGER.warn("Asking other servers to recover the waystone.");
+            CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new WaystoneRecovery(waystoneUUID));
+        }
+    }
+
+    private void saveWaystoneDataToDatabase(Pair<String, IWaystone> serverWaystonePair){
+        if(!CrossServerCoreAPI.instance.getServerName().equals(serverWaystonePair.getFirst())){ //only save waystone data for the current server
+            return;
+        }
+
+        String waystoneUUID = serverWaystonePair.getSecond().getWaystoneUid().toString();
+        Document document = new Document("uuid", waystoneUUID);
+        CompoundTag tag = new CompoundTag();
+        Waystone.write(serverWaystonePair.getSecond(), tag);
+        document.append("waystone", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, tag).result().get().toString());
+        document.append("server", serverWaystonePair.getFirst());
+
+        databaseWaystonesData.deleteMany(new Document("uuid", waystoneUUID));
+        databaseWaystonesData.insertOne(document);
+    }
+
+    private void removeWaystoneDataFromDatabase(IWaystone waystone) {
+        databaseWaystonesData.deleteMany(new Document("uuid", waystone.getWaystoneUid().toString()));
+    }
+
+    private void saveAllWaystonesDataToDatabase(){
+        waystoneServerMap.forEach((uuid, serverWaystonePair) -> {
+            saveWaystoneDataToDatabase(serverWaystonePair);
         });
     }
 
@@ -185,7 +245,7 @@ public class WaystoneManager {
 
         List<UUID> waystoneUUIDs = new ArrayList<>();
         playersWaystoneData.getWaystones(player).forEach(waystone -> waystoneUUIDs.add(waystone.getWaystoneUid()));
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new WaystonesData(player.getName().getString(), waystoneUUIDs));
+        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new PlayerWaystonesData(player.getName().getString(), waystoneUUIDs));
     }
 
     private void savePlayerWaystonesToDatabase(Player player){

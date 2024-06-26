@@ -10,13 +10,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class WaystonesData extends BaseMessage {
-    public static final String MESSAGE_NAME = "waystones_data";
+public class PlayerWaystonesData extends BaseMessage {
+    public static final String MESSAGE_NAME = "player_waystones_data";
 
     private String playerName;
     private List<UUID> waystones;
 
-    public WaystonesData(String playerName, List<UUID> waystones) {
+    public PlayerWaystonesData(String playerName, List<UUID> waystones) {
         super(MESSAGE_NAME);
         this.playerName = playerName;
         this.waystones = waystones;
@@ -43,7 +43,7 @@ public class WaystonesData extends BaseMessage {
         return jsonObject;
     }
 
-    public static WaystonesData deserialize(JsonObject json) {
+    public static PlayerWaystonesData deserialize(JsonObject json) {
         String playerName = json.get("player").getAsString();
         List<UUID> waystones = new ArrayList<>();
         JsonArray waystonesArray = json.get("waystones").getAsJsonArray();
@@ -51,7 +51,7 @@ public class WaystonesData extends BaseMessage {
             waystones.add(UUID.fromString(waystoneElement.getAsString()));
         }
 
-        return new WaystonesData(playerName, waystones);
+        return new PlayerWaystonesData(playerName, waystones);
     }
 
 

@@ -5,6 +5,7 @@ import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.tp.commands.DatasyncTpCommand;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
+import fr.modcraftmc.datasync.tp.message.TpaHereRequestMessage;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequestHandler;
 import net.minecraftforge.common.MinecraftForge;
@@ -30,6 +31,7 @@ public class DatasyncTp {
     public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
         event.getInstance().registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
         event.getInstance().registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
+        event.getInstance().registerCrossMessage(TpaHereRequestMessage.MESSAGE_NAME, TpaHereRequestMessage::deserialize);
     }
 
     public void commandResister(RegisterCommandsEvent event){

@@ -11,6 +11,7 @@ public class DatasyncTpCommand {
     public DatasyncTpCommand(CommandDispatcher<CommandSourceStack> dispatcher){
         new TpCommand();
         new TpaCommand();
+        new TpaHereCommand();
         register(dispatcher);
     }
 

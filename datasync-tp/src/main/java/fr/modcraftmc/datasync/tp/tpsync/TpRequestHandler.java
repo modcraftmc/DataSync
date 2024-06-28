@@ -47,7 +47,7 @@ public class TpRequestHandler {
         ServerPlayer source = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerSourceName), "source player for teleport request not found");
         Vec3 position = target.position();
 
-        source.teleportTo(position.x, position.y, position.z);
+        source.teleportTo(target.getLevel(), position.x, position.y, position.z, target.getYRot(), target.getXRot());
 
 //        if (GoldenForgeLib.isGoldenForge())
 //            GoldenForgeLib.teleportAsync(source, Location.toLocation(target.level, target.position())).thenAccept((isTeleported) -> {

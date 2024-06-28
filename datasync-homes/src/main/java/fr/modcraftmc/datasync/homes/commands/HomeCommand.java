@@ -48,7 +48,11 @@ public class HomeCommand extends CommandModule {
 
         ROOT_COMMANDS.add(Commands.literal("sethome")
                 .then(Commands.argument("name", StringArgumentType.word())
-                        .executes(context -> createHome(context.getSource(), StringArgumentType.getString(context, "name")))));
+                        .executes(context -> createHome(context.getSource(), StringArgumentType.getString(context, "name"), false))));
+
+        ROOT_COMMANDS.add(Commands.literal("sethomereplace")
+                .then(Commands.argument("name", StringArgumentType.word())
+                        .executes(context -> createHome(context.getSource(), StringArgumentType.getString(context, "name"), true))));
 
         ROOT_COMMANDS.add(Commands.literal("delhome")
                 .then(Commands.argument("name", StringArgumentType.word())
@@ -58,13 +62,25 @@ public class HomeCommand extends CommandModule {
 
     }
 
-    private int createHome(CommandSourceStack source, String name) throws CommandSyntaxException {
+    private int createHome(CommandSourceStack source, String name, boolean override) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
         String playerName = player.getName().getString();
+        BlockPos pos = player.blockPosition();
+        ServerLevel dimension = player.getLevel();
 
-        if(DatasyncHomes.homeManager.homeExists(playerName, name)){
-            source.sendFailure(Component.literal("Home " + name + " already exists !").withStyle(style -> style.withColor(ChatFormatting.RED)));
-            return 0;
+        boolean homeExist = DatasyncHomes.homeManager.homeExists(playerName, name);
+        if(homeExist && !override) {
+            Component overrideText = Component.literal("[Replace]").withStyle(style -> {
+                return style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/sethomereplace " + name));
+            }).withStyle(ChatFormatting.GOLD);
+            source.sendSystemMessage(Component.literal("Home " + name + " already exists !").withStyle(style -> style.withColor(ChatFormatting.RED)));
+            source.sendSystemMessage(overrideText);
+            return 1;
+        } else if (homeExist) {
+            DatasyncHomes.homeManager.deleteHome(playerName, name);
+            DatasyncHomes.homeManager.createHome(playerName, name, pos.getX(), pos.getY(), pos.getZ(), SerializationUtil.ToJsonElement(dimension.dimension(), Registry.DIMENSION_REGISTRY).toString());
+            source.sendSuccess(Component.literal("Home " + name + " replaced !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
+            return 1;
         }
 
         if(!DatasyncHomes.homeManager.canCreateHome(playerName)){
@@ -72,8 +88,6 @@ public class HomeCommand extends CommandModule {
             return 0;
         }
 
-        BlockPos pos = player.blockPosition();
-        ServerLevel dimension = player.getLevel();
         DatasyncHomes.homeManager.createHome(playerName, name, pos.getX(), pos.getY(), pos.getZ(), SerializationUtil.ToJsonElement(dimension.dimension(), Registry.DIMENSION_REGISTRY).toString());
         source.sendSuccess(Component.literal("Home " + name + " created !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
         return 1;

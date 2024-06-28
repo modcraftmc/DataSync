@@ -47,7 +47,7 @@ public class TpaHereRequestMessage extends BaseMessage {
     }
 
     public TpaHereRequest getTpaHereRequest() {
-        return new TpaHereRequest(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName), playerTargetName, time);
+        return new TpaHereRequest(playerSourceName, playerTargetName, time);
     }
 
     @Override

@@ -29,7 +29,7 @@ public class TpaCommand extends CommandModule{
             source.sendFailure(Component.literal("You must be a player to use this command"));
             return 0;
         }
-        new TpaRequest(source.getPlayer(), target).fire();
+        new TpaRequest(source.getPlayer().getName().getString(), target).fire();
         return 1;
     }
 

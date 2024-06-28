@@ -29,7 +29,7 @@ public class TpaHereCommand extends CommandModule{
             source.sendFailure(Component.literal("You must be a player to use this command"));
             return 0;
         }
-        new TpaHereRequest(source.getPlayer(), target).fire();
+        new TpaHereRequest(source.getPlayer().getName().getString(), target).fire();
         return 1;
     }
 

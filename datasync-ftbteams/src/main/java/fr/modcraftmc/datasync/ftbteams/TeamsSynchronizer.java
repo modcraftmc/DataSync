@@ -45,7 +45,7 @@ public class TeamsSynchronizer {
 
         TeamManagerEvent.CREATED.register((event) -> {
             loadTeams();
-            CrossServerCoreAPI.instance.getPlayerLocationMap().keySet().forEach(TeamsSynchronizer::setPlayerTeamOnline);
+            CrossServerCoreAPI.instance.getPlayerLocationMap().keySet().forEach((player) -> TeamsSynchronizer.setPlayerTeamStatus(player, true));
         });
         TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
         TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
@@ -61,19 +61,18 @@ public class TeamsSynchronizer {
         CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, syncServer) -> {
             if (!FTBTeamsAPI.isManagerLoaded()){
                 TeamManagerEvent.CREATED.register((event) -> {
-                    setPlayerTeamOnline(playerName);
+                    setPlayerTeamStatus(playerName, true);
                 });
 
                 return;
             }
-            setPlayerTeamOnline(playerName);
+            setPlayerTeamStatus(playerName, true); // why ??
         });
 
-        //todo: find why this piece of code existed
-//            CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, syncServer) -> {
-//                if(!FTBTeamsAPI.isManagerLoaded()) return;
-//                setPlayerTeamOnline(playerName);
-//            });
+        CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, syncServer) -> {
+            if(!FTBTeamsAPI.isManagerLoaded()) return;
+            setPlayerTeamStatus(playerName, false);
+        });
     }
 
     public void removeTeam(Team team){
@@ -259,11 +258,11 @@ public class TeamsSynchronizer {
         return team;
     }
 
-    public static void setPlayerTeamOnline(String playerName){
+    public static void setPlayerTeamStatus(String playerName, boolean isOnline){
         FTBTeamsAPI.getManager().getKnownPlayers().forEach((uuid, playerTeam) -> {
             if(playerTeam.playerName.equals(playerName)){
                 DatasyncFtbTeam.LOGGER.debug(String.format("player team of %s set online", playerName));
-                playerTeam.online = true;
+                playerTeam.online = isOnline;
                 playerTeam.updatePresence();
             }
         });

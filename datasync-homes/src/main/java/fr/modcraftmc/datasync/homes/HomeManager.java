@@ -34,8 +34,8 @@ import java.util.Optional;
 
 public class HomeManager {
 
-    private final HashMap<String, HomesData> playerHomesDataMap = new HashMap<>(); //todo: switch String player name to ISyncPlayer
-    private final HashMap<String, PendingHomeTp> pendingHomeTpList = new HashMap<>(); //todo: switch String player name to ISyncPlayer
+    private final HashMap<ISyncPlayer, HomesData> playerHomesDataMap = new HashMap<>();
+    private final HashMap<ISyncPlayer, PendingHomeTp> pendingHomeTpList = new HashMap<>();
 
     private static final String homesCollectionName = "homes";
     private ISharedDataStore homesCollection = SharedDataStoreProvider.get(homesCollectionName);
@@ -61,7 +61,7 @@ public class HomeManager {
         unloadPlayerHomesData(event.getPlayer());
     }
 
-    public List<String> getHomeNames(String player) {
+    public List<String> getHomeNames(ISyncPlayer player) {
         List<String> homesNames = new ArrayList<>();
         HomesData playerHomesData = playerHomesDataMap.get(player);
         if(playerHomesData == null)
@@ -74,26 +74,26 @@ public class HomeManager {
     }
 
     public Home getHomeByName(ISyncPlayer player, String name) {
-        return playerHomesDataMap.get(player.getName()).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
+        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
     }
 
     public int getPlayerHomesLimit(ISyncPlayer player) {
-        return playerHomesDataMap.get(player.getName()).homesLimit().orElse(maxHomes);
+        return playerHomesDataMap.get(player).homesLimit().orElse(maxHomes);
     }
 
     public Optional<Integer> getPlayerHomesLimitOptional(ISyncPlayer player){
-        return playerHomesDataMap.get(player.getName()).homesLimit();
+        return playerHomesDataMap.get(player).homesLimit();
     }
 
     public int getRemainingHomes(ISyncPlayer player) {
-        return  getPlayerHomesLimit(player) - playerHomesDataMap.get(player.getName()).homes().size();
+        return  getPlayerHomesLimit(player) - playerHomesDataMap.get(player).homes().size();
     }
 
     public boolean canCreateHome(ISyncPlayer player) {
         return getRemainingHomes(player) > 0;
     }
 
-    public void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, String playerHomeOwner, String targetHome) {
+    public void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, ISyncPlayer playerHomeOwner, String targetHome) {
         Home target = null;
         for (Home home : playerHomesDataMap.get(playerHomeOwner).homes()) {
             if (home.name().equals(targetHome)) {
@@ -135,7 +135,7 @@ public class HomeManager {
 
     public void addPendingHomeTp(HomeTpRequest homeTpRequest) {
         synchronized (pendingHomeTpList) {
-            pendingHomeTpList.put(homeTpRequest.getPlayer().getName(), new PendingHomeTp(homeTpRequest.getHome(), (int) System.currentTimeMillis() / 1000));
+            pendingHomeTpList.put(homeTpRequest.getPlayer(), new PendingHomeTp(homeTpRequest.getHome(), (int) System.currentTimeMillis() / 1000));
         }
     }
 
@@ -143,17 +143,16 @@ public class HomeManager {
         synchronized (pendingHomeTpList) {
             pendingHomeTpList.entrySet().removeIf(pendingHomeTp -> pendingHomeTp.getValue().time() + pendingHomeTpTimeout < (int) System.currentTimeMillis() / 1000);
 
-            if (pendingHomeTpList.containsKey(event.getEntity().getName().getString())) {
-                PendingHomeTp pendingHomeTp = pendingHomeTpList.remove(event.getEntity().getName().getString());
-                CrossServerCoreAPI.getPlayer(event.getEntity().getUUID()).ifPresent(player -> {
-                    tryTeleportPlayerToHome(player, pendingHomeTp.home());
-                });
+            ISyncPlayer player = CrossServerCoreAPI.getPlayer(event.getEntity().getUUID()).orElseThrow();
+            if (pendingHomeTpList.containsKey(player)) {
+                PendingHomeTp pendingHomeTp = pendingHomeTpList.remove(player);
+                tryTeleportPlayerToHome(player, pendingHomeTp.home());
             }
         }
     }
 
     public void loadPlayerHomesData(ISyncPlayer player){
-        playerHomesDataMap.put(player.getName(), getHomesDataFromDatabase(player));
+        playerHomesDataMap.put(player, getHomesDataFromDatabase(player));
     }
 
     public void unloadPlayerHomesData(ISyncPlayer player){
@@ -165,12 +164,12 @@ public class HomeManager {
 
     public void savePlayerHomesData(ISyncPlayer player) {
         String playerName = player.getName();
-        if(!playerHomesDataMap.containsKey(playerName)){
+        if(!playerHomesDataMap.containsKey(player)){
             DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but player isn't loaded", playerName);
             return;
         }
 
-        Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(playerName).serialize().toString());
+        Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(player).serialize().toString());
 
         homesCollection.accessOrThrow().updateOne(new Document("player", playerName), document);
     }
@@ -215,7 +214,7 @@ public class HomeManager {
     }
 
     public void addCachedHome(ISyncPlayer player, Home home){
-        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
+        HomesData playerHomesData = playerHomesDataMap.get(player);
 
         if(playerHomesData != null)
             playerHomesData.homes().add(home);
@@ -228,7 +227,7 @@ public class HomeManager {
     }
 
     public void removeCachedHome(ISyncPlayer player, String homeName){
-        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
+        HomesData playerHomesData = playerHomesDataMap.get(player);
 
         if(playerHomesData != null)
             playerHomesData.homes().removeIf(home -> home.name().equals(homeName));
@@ -240,7 +239,7 @@ public class HomeManager {
     }
 
     public void setCachedPlayerHomesLimit(ISyncPlayer player, int count){
-        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
+        HomesData playerHomesData = playerHomesDataMap.get(player);
         if(playerHomesData != null)
             playerHomesData.setHomesLimit(count);
     }
@@ -256,7 +255,7 @@ public class HomeManager {
     }
 
     public void unsetCachedPlayerHomesLimit(ISyncPlayer player){
-        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
+        HomesData playerHomesData = playerHomesDataMap.get(player);
         if(playerHomesData != null)
             playerHomesData.unsetHomesLimit();
     }
@@ -270,8 +269,8 @@ public class HomeManager {
         CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new ChangeGlobalHomesLimit(maxHomes));
     }
 
-    public boolean homeExists(String playerName, String homeName) {
-        return playerHomesDataMap.get(playerName).homes().stream().anyMatch(home -> home.name().equals(homeName));
+    public boolean homeExists(ISyncPlayer player, String homeName) {
+        return playerHomesDataMap.get(player).homes().stream().anyMatch(home -> home.name().equals(homeName));
     }
 
     public int getGlobalHomesLimit() {

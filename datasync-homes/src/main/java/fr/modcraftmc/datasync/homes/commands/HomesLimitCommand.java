@@ -2,7 +2,8 @@ package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
-import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
+import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -18,23 +19,22 @@ public class HomesLimitCommand extends CommandModule {
                 .executes(context -> showHomeLimit(context.getSource()))
                 .then(Commands.argument("limit", IntegerArgumentType.integer(0))
                         .executes(context -> setHomeLimit(context.getSource(), IntegerArgumentType.getInteger(context, "limit"))))
-                .then(Commands.argument("player", StringArgumentType.word())
-                        .suggests(new NetworkPlayerSuggestionProvider())
-                        .executes(context -> showHomeLimit(context.getSource(), StringArgumentType.getString(context, "player")))
+                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
+                        .executes(context -> showHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))
                         .then(Commands.argument("limit", IntegerArgumentType.integer(0))
-                                .executes(context -> setHomeLimit(context.getSource(), StringArgumentType.getString(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))
+                                .executes(context -> setHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))
                         .then(Commands.literal("default")
-                                .executes(context -> unsetHomeLimit(context.getSource(), StringArgumentType.getString(context, "player")))))
+                                .executes(context -> unsetHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))))
         );
     }
 
-    private int setHomeLimit(CommandSourceStack source, String player, int limit) {
+    private int setHomeLimit(CommandSourceStack source, ISyncPlayer player, int limit) {
         DatasyncHomes.homeManager.setPlayerHomesLimit(player, limit);
         source.sendSuccess(Component.literal("The new homes limit for " + player + " is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 
-    private int unsetHomeLimit(CommandSourceStack source, String player) {
+    private int unsetHomeLimit(CommandSourceStack source, ISyncPlayer player) {
         DatasyncHomes.homeManager.unsetPlayerHomesLimit(player);
         source.sendSuccess(Component.literal("The homes limit for " + player + " has been unset").withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
@@ -52,7 +52,7 @@ public class HomesLimitCommand extends CommandModule {
         return 1;
     }
 
-    private int showHomeLimit(CommandSourceStack source, String player){
+    private int showHomeLimit(CommandSourceStack source, ISyncPlayer player){
         source.sendSuccess(Component.literal("The homes limit for " + player + " is : " + DatasyncHomes.homeManager.getPlayerHomesLimit(player)).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }

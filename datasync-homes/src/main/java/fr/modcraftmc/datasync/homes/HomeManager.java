@@ -3,9 +3,14 @@ package fr.modcraftmc.datasync.homes;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
+import fr.modcraftmc.crossservercore.api.events.PlayerJoinClusterEvent;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreNotReadyException;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.ChangePlayerHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
@@ -17,6 +22,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.bson.Document;
@@ -28,26 +34,31 @@ import java.util.Optional;
 
 public class HomeManager {
 
-    private final HashMap<String, HomesData> playerHomesDataMap = new HashMap<>();
-    private final HashMap<String, PendingHomeTp> pendingHomeTpList = new HashMap<>();
+    private final HashMap<String, HomesData> playerHomesDataMap = new HashMap<>(); //todo: switch String player name to ISyncPlayer
+    private final HashMap<String, PendingHomeTp> pendingHomeTpList = new HashMap<>(); //todo: switch String player name to ISyncPlayer
 
     private static final String homesCollectionName = "homes";
-    private MongoCollection<Document> homesCollection;
+    private ISharedDataStore homesCollection = SharedDataStoreProvider.get(homesCollectionName);
 
     private static int pendingHomeTpTimeout = 120;
     private int maxHomes = 5;
 
-    public void register() {
-        homesCollection = CrossServerCoreAPI.instance.getOrCreateMongoCollection(homesCollectionName);
+    public HomeManager() {
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReady);
+        MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoinCluster);
+        MinecraftForge.EVENT_BUS.addListener(this::onPlayerLeaveCluster);
+    }
+
+    private void onCrossServerCoreReady(CrossServerCoreReadyEvent event){
         loadGlobalHomesLimitFromDatabase();
+    }
 
-        CrossServerCoreAPI.instance.registerOnPlayerJoinedCluster((playerName, SyncServer) -> {
-            loadPlayerHomesData(playerName);
-        });
+    private void onPlayerJoinCluster(PlayerJoinClusterEvent event){
+        loadPlayerHomesData(event.getPlayer());
+    }
 
-        CrossServerCoreAPI.instance.registerOnPlayerLeftCluster((playerName, SyncServer) -> {
-            unloadPlayerHomesData(playerName);
-        });
+    private void onPlayerLeaveCluster(PlayerJoinClusterEvent event){
+        unloadPlayerHomesData(event.getPlayer());
     }
 
     public List<String> getHomeNames(String player) {
@@ -62,27 +73,27 @@ public class HomeManager {
         return homesNames;
     }
 
-    public Home getHomeByName(String player, String name) {
-        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
+    public Home getHomeByName(ISyncPlayer player, String name) {
+        return playerHomesDataMap.get(player.getName()).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
     }
 
-    public int getPlayerHomesLimit(String player) {
-        return playerHomesDataMap.get(player).homesLimit().orElse(maxHomes);
+    public int getPlayerHomesLimit(ISyncPlayer player) {
+        return playerHomesDataMap.get(player.getName()).homesLimit().orElse(maxHomes);
     }
 
-    public Optional<Integer> getPlayerHomesLimitOptional(String player){
-        return playerHomesDataMap.get(player).homesLimit();
+    public Optional<Integer> getPlayerHomesLimitOptional(ISyncPlayer player){
+        return playerHomesDataMap.get(player.getName()).homesLimit();
     }
 
-    public int getRemainingHomes(String player) {
-        return  getPlayerHomesLimit(player) - playerHomesDataMap.get(player).homes().size();
+    public int getRemainingHomes(ISyncPlayer player) {
+        return  getPlayerHomesLimit(player) - playerHomesDataMap.get(player.getName()).homes().size();
     }
 
-    public boolean canCreateHome(String player) {
+    public boolean canCreateHome(ISyncPlayer player) {
         return getRemainingHomes(player) > 0;
     }
 
-    public void tryTeleportPlayerToHome(String playerToTeleport, String playerHomeOwner, String targetHome) {
+    public void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, String playerHomeOwner, String targetHome) {
         Home target = null;
         for (Home home : playerHomesDataMap.get(playerHomeOwner).homes()) {
             if (home.name().equals(targetHome)) {
@@ -98,13 +109,17 @@ public class HomeManager {
         tryTeleportPlayerToHome(playerToTeleport, target);
     }
 
-    private void tryTeleportPlayerToHome(String playerToTeleport, Home target) {
-        if(!target.server.equals(CrossServerCoreAPI.instance.getServerName())){
-            CrossServerCoreProxyExtensionAPI.instance.transferPlayer(playerToTeleport, target.server);
-            addPendingHomeTp(playerToTeleport, target);
+    private void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, Home target) {
+        if(!target.server.equals(CrossServerCoreAPI.getServerName())){
+            CrossServerCoreAPI.getServer(target.server).ifPresentOrElse(server -> {
+                CrossServerCoreProxyExtensionAPI.transferPlayer(playerToTeleport, server);
+                addPendingHomeTp(playerToTeleport, target);
+            }, () -> {
+                DatasyncHomes.LOGGER.error("Server {} not found", target.server);
+            });
         } else {
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-            ServerPlayer serverPlayer = server.getPlayerList().getPlayerByName(playerToTeleport);
+            ServerPlayer serverPlayer = server.getPlayerList().getPlayer(playerToTeleport.getUUID());
             if (serverPlayer != null) {
                 ServerLevel serverLevel = server.getLevel(SerializationUtil.GetResourceKey(SerializationUtil.StringToJsonElement(target.dimension), Registry.DIMENSION_REGISTRY));
                 if (serverLevel != null) {
@@ -114,13 +129,13 @@ public class HomeManager {
         }
     }
 
-    public void addPendingHomeTp(String playerToTeleport, Home home){
-        CrossServerCoreAPI.instance.sendCrossMessageToServer(new HomeTpRequest(playerToTeleport, home), home.server());
+    public void addPendingHomeTp(ISyncPlayer playerToTeleport, Home home){
+        CrossServerCoreAPI.sendCrossMessageToServer(new HomeTpRequest(playerToTeleport, home), home.server());
     }
 
     public void addPendingHomeTp(HomeTpRequest homeTpRequest) {
         synchronized (pendingHomeTpList) {
-            pendingHomeTpList.put(homeTpRequest.getPlayerName(), new PendingHomeTp(homeTpRequest.getHome(), (int) System.currentTimeMillis() / 1000));
+            pendingHomeTpList.put(homeTpRequest.getPlayer().getName(), new PendingHomeTp(homeTpRequest.getHome(), (int) System.currentTimeMillis() / 1000));
         }
     }
 
@@ -130,35 +145,38 @@ public class HomeManager {
 
             if (pendingHomeTpList.containsKey(event.getEntity().getName().getString())) {
                 PendingHomeTp pendingHomeTp = pendingHomeTpList.remove(event.getEntity().getName().getString());
-                tryTeleportPlayerToHome(event.getEntity().getName().getString(), pendingHomeTp.home());
+                CrossServerCoreAPI.getPlayer(event.getEntity().getUUID()).ifPresent(player -> {
+                    tryTeleportPlayerToHome(player, pendingHomeTp.home());
+                });
             }
         }
     }
 
-    public void loadPlayerHomesData(String player){
-        playerHomesDataMap.put(player, getHomesDataFromDatabase(player));
+    public void loadPlayerHomesData(ISyncPlayer player){
+        playerHomesDataMap.put(player.getName(), getHomesDataFromDatabase(player));
     }
 
-    public void unloadPlayerHomesData(String player){
-        if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(player) != null)
+    public void unloadPlayerHomesData(ISyncPlayer player){
+        String playerName = player.getName();
+        if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerName) != null)
             savePlayerHomesData(player);
-        playerHomesDataMap.remove(player);
+        playerHomesDataMap.remove(playerName);
     }
 
-    public void savePlayerHomesData(String player){
-        if(!playerHomesDataMap.containsKey(player)){
-            DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but player isn't loaded", player);
+    public void savePlayerHomesData(ISyncPlayer player) {
+        String playerName = player.getName();
+        if(!playerHomesDataMap.containsKey(playerName)){
+            DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but player isn't loaded", playerName);
             return;
         }
 
-        Document document = new Document("player", player).append("homesData", playerHomesDataMap.get(player).serialize().toString());
+        Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(playerName).serialize().toString());
 
-        homesCollection.deleteMany(new Document("player", player));
-        homesCollection.insertOne(document);
+        homesCollection.accessOrThrow().updateOne(new Document("player", playerName), document);
     }
 
-    public HomesData getHomesDataFromDatabase(String player){
-        Document document = homesCollection.find(new Document("player", player)).first();
+    public HomesData getHomesDataFromDatabase(ISyncPlayer player) {
+        Document document = homesCollection.accessOrThrow().find(new Document("player", player.getName())).first();
         if(document != null){
             return HomesData.deserialize(SerializationUtil.gson.fromJson(document.get("homesData").toString(), JsonObject.class));
         }
@@ -167,72 +185,78 @@ public class HomeManager {
     }
 
     public void loadGlobalHomesLimitFromDatabase(){
-        Document document = homesCollection.find(new Document("global", "homesLimit")).first();
+        Document document = null;
+        try {
+            document = homesCollection.access().find(new Document("global", "homesLimit")).first();
+        } catch (SharedDataStoreNotReadyException e) {
+            DatasyncHomes.LOGGER.error("Error while trying to access homes, loading of homes happens too early");
+        }
+
         if(document != null){
             int limit = document.getInteger("limit");
             maxHomes = limit;
             return;
         }
+
         saveGlobalHomesLimitToDatabase();
     }
 
-    public void saveGlobalHomesLimitToDatabase(){
+    public void saveGlobalHomesLimitToDatabase() {
         Document document = new Document("global", "homesLimit").append("limit", maxHomes);
 
-        homesCollection.deleteMany(new Document("global", "homesLimit"));
-        homesCollection.insertOne(document);
+        homesCollection.accessOrThrow().updateOne(new Document("global", "homesLimit"), document);
     }
 
-    public void createHome(String playerName, String homeName, int x, int y, int z, String dimension) {
-        Home home = new Home(homeName, x, y, z, dimension, CrossServerCoreAPI.instance.getServerName());
-        addCachedHome(playerName, home);
-        savePlayerHomesData(playerName);
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new SetHome(playerName, SetHome.ActionType.SET, home));
+    public void createHome(ISyncPlayer player, String homeName, int x, int y, int z, String dimension) {
+        Home home = new Home(homeName, x, y, z, dimension, CrossServerCoreAPI.getServerName());
+        addCachedHome(player, home);
+        savePlayerHomesData(player);
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new SetHome(player, SetHome.ActionType.SET, home));
     }
 
-    public void addCachedHome(String playerName, Home home){
-        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+    public void addCachedHome(ISyncPlayer player, Home home){
+        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
 
         if(playerHomesData != null)
             playerHomesData.homes().add(home);
     }
 
-    public void deleteHome(String playerName, String homeName) {
-        removeCachedHome(playerName, homeName);
-        savePlayerHomesData(playerName);
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new SetHome(playerName, SetHome.ActionType.DELETE, new Home(homeName, 0, 0, 0, "", "")));
+    public void deleteHome(ISyncPlayer player, String homeName) {
+        removeCachedHome(player, homeName);
+        savePlayerHomesData(player);
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new SetHome(player, SetHome.ActionType.DELETE, new Home(homeName, 0, 0, 0, "", "")));
     }
 
-    public void removeCachedHome(String playerName, String homeName){
-        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+    public void removeCachedHome(ISyncPlayer player, String homeName){
+        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
 
         if(playerHomesData != null)
             playerHomesData.homes().removeIf(home -> home.name().equals(homeName));
     }
 
-    public void setPlayerHomesLimit(String playerName, int count){
-        setCachedPlayerHomesLimit(playerName, count);
-        propagatePlayerHomesLimit(playerName);
+    public void setPlayerHomesLimit(ISyncPlayer player, int count){
+        setCachedPlayerHomesLimit(player, count);
+        propagatePlayerHomesLimit(player);
     }
 
-    public void setCachedPlayerHomesLimit(String playerName, int count){
-        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+    public void setCachedPlayerHomesLimit(ISyncPlayer player, int count){
+        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
         if(playerHomesData != null)
             playerHomesData.setHomesLimit(count);
     }
 
-    private void propagatePlayerHomesLimit(String playerName){
-        savePlayerHomesData(playerName);
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new ChangePlayerHomesLimit(playerName, getPlayerHomesLimitOptional(playerName)));
+    private void propagatePlayerHomesLimit(ISyncPlayer player){
+        savePlayerHomesData(player);
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new ChangePlayerHomesLimit(player, getPlayerHomesLimitOptional(player)));
     }
 
-    public void unsetPlayerHomesLimit(String playerName){
-        unsetCachedPlayerHomesLimit(playerName);
+    public void unsetPlayerHomesLimit(ISyncPlayer player){
+        unsetCachedPlayerHomesLimit(player);
         propagateGlobalHomesLimit();
     }
 
-    public void unsetCachedPlayerHomesLimit(String playerName){
-        HomesData playerHomesData = playerHomesDataMap.get(playerName);
+    public void unsetCachedPlayerHomesLimit(ISyncPlayer player){
+        HomesData playerHomesData = playerHomesDataMap.get(player.getName());
         if(playerHomesData != null)
             playerHomesData.unsetHomesLimit();
     }
@@ -243,7 +267,7 @@ public class HomeManager {
 
     public void propagateGlobalHomesLimit(){
         saveGlobalHomesLimitToDatabase();
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new ChangeGlobalHomesLimit(maxHomes));
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new ChangeGlobalHomesLimit(maxHomes));
     }
 
     public boolean homeExists(String playerName, String homeName) {
@@ -278,8 +302,8 @@ public class HomeManager {
         }
     }
 
-    public boolean isLocalHome(String player, String homeName) {
-        return getHomeByName(player, homeName).server().equals(CrossServerCoreAPI.instance.getServerName());
+    public boolean isLocalHome(ISyncPlayer player, String homeName) {
+        return getHomeByName(player, homeName).server().equals(CrossServerCoreAPI.getServerName());
     }
 
     public static class HomesData {

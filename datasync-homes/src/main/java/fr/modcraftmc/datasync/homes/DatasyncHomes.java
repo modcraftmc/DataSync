@@ -1,12 +1,14 @@
 package fr.modcraftmc.datasync.homes;
 
 import com.mojang.logging.LogUtils;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.homes.commands.DatasyncHomesCommand;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.ChangePlayerHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
 import fr.modcraftmc.datasync.homes.messages.SetHome;
+import fr.modcraftmc.datasync.homes.messages.autoserializer.HomeSerializer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -29,11 +31,7 @@ public class DatasyncHomes {
     }
 
     public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        event.getInstance().registerCrossMessage(HomeTpRequest.MESSAGE_NAME, HomeTpRequest::deserialize);
-        event.getInstance().registerCrossMessage(ChangeGlobalHomesLimit.MESSAGE_NAME, ChangeGlobalHomesLimit::deserialize);
-        event.getInstance().registerCrossMessage(SetHome.MESSAGE_NAME, SetHome::deserialize);
-        event.getInstance().registerCrossMessage(ChangePlayerHomesLimit.MESSAGE_NAME, ChangePlayerHomesLimit::deserialize);
-        homeManager.register();
+        CrossServerCoreAPI.getMessageAutoPropertySerializer().registerFieldSerializer(new HomeSerializer());
     }
 
 

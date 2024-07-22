@@ -26,16 +26,21 @@ subprojects {
 
     java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
+    configurations.configureEach {
+        resolutionStrategy.cacheChangingModulesFor 0, 'seconds' // Avoid caching changing modules
+    }
+
     repositories {
-        maven { url = 'https://maven.modcraftmc.fr/snapshots' }
+        mavenLocal()
         maven { url = 'https://maven.modcraftmc.fr/releases' }
+        maven { url = 'https://maven.modcraftmc.fr/snapshots' }
         maven { url "https://cursemaven.com" }
     }
 
     dependencies {
         minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-        implementation('fr.modcraftmc:cross-server-core:1.2.5:api')
+        implementation ('fr.modcraftmc:cross-server-core:2.0.0:api') {changing = true}
     }
 
     minecraft {

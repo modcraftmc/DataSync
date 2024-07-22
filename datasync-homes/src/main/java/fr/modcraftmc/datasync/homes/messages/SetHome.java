@@ -1,56 +1,39 @@
 package fr.modcraftmc.datasync.homes.messages;
 
-import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
 import fr.modcraftmc.datasync.homes.HomeManager;
 
+@AutoRegister("set_home")
 public class SetHome extends BaseMessage {
-    public static final String MESSAGE_NAME = "set_home";
 
     public enum ActionType {
         SET,
         DELETE
     }
 
-    public final ActionType actionType;
+    @AutoSerialize
+    public final String actionType;
+    @AutoSerialize
     public final HomeManager.Home home;
-    public final String playerName;
+    @AutoSerialize
+    public final ISyncPlayer player;
 
-    public SetHome(String playerName, ActionType actionType, HomeManager.Home home) {
-        super(MESSAGE_NAME);
-        this.playerName = playerName;
-        this.actionType = actionType;
+    public SetHome(ISyncPlayer player, ActionType actionType, HomeManager.Home home) {
+        this.player = player;
+        this.actionType = actionType.name();
         this.home = home;
     }
 
     @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    @Override
-    protected JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("playerName", playerName);
-        jsonObject.addProperty("actionType", actionType.name());
-        jsonObject.add("home", home.serialize());
-        return jsonObject;
-    }
-
-    public static SetHome deserialize(JsonObject jsonObject) {
-        return new SetHome(
-                jsonObject.get("playerName").getAsString(),
-                ActionType.valueOf(jsonObject.get("actionType").getAsString()),
-                HomeManager.Home.deserialize(jsonObject.get("home").getAsJsonObject())
-        );
-    }
-
-    @Override
     public void handle() {
-        switch (actionType) {
-            case SET -> DatasyncHomes.homeManager.addCachedHome(playerName, home);
-            case DELETE -> DatasyncHomes.homeManager.removeCachedHome(playerName, home.name());
+        ActionType action = ActionType.valueOf(this.actionType);
+        switch (action) {
+            case SET -> DatasyncHomes.homeManager.addCachedHome(player, home);
+            case DELETE -> DatasyncHomes.homeManager.removeCachedHome(player, home.name());
         }
     }
 }

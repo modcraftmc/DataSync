@@ -1,29 +1,25 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.datasync.tp.DatasyncTp;
-import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.server.ServerLifecycleHooks;
-import org.bukkit.Location;
-import org.goldenforge.GoldenForgeLib;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 public class TpRequestHandler {
     private static final List<TpRequest> tpRequestsBuffer = new ArrayList<>();
     public static final int tpTimeout = 20; //time in second before tp request expire
 
     public static void handle(TpRequest tpRequest){
-        String playerSourceName = tpRequest.getPlayerSourceName();
-        if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName) != null){
+        UUID playerSourceUUID = tpRequest.getPlayerSource().getUUID();
+        if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(playerSourceUUID) != null){
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
-            server.execute(() -> teleportPlayer(server, playerSourceName, tpRequest.getPlayerTargetName())); //handleTpRequest is called from another thread
+            server.execute(() -> teleportPlayer(server, playerSourceUUID, tpRequest.getPlayerTarget().getUUID())); //handleTpRequest is called from another thread
             return;
         }
 
@@ -33,18 +29,18 @@ public class TpRequestHandler {
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event){
         cleanTpRequest();
         for(TpRequest tpRequest : tpRequestsBuffer){
-            if(tpRequest.getPlayerSourceName().equals(event.getEntity().getName().getString())){
+            if(tpRequest.getPlayerSource().equals(event.getEntity().getName().getString())){
                 MinecraftServer server = event.getEntity().getServer();
-                teleportPlayer(server, tpRequest.getPlayerSourceName(), tpRequest.getPlayerTargetName());
+                teleportPlayer(server, tpRequest.getPlayerSource().getUUID(), tpRequest.getPlayerTarget().getUUID());
                 tpRequestsBuffer.remove(tpRequest);
                 return;
             }
         }
     }
 
-    private static void teleportPlayer(MinecraftServer server, String playerSourceName, String playerTargetName){
-        ServerPlayer target = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerTargetName), "Target player for teleport request not found");
-        ServerPlayer source = Objects.requireNonNull(server.getPlayerList().getPlayerByName(playerSourceName), "source player for teleport request not found");
+    private static void teleportPlayer(MinecraftServer server, UUID playerSourceUUID, UUID playerTargetUUID){
+        ServerPlayer target = Objects.requireNonNull(server.getPlayerList().getPlayer(playerTargetUUID), "Target player for teleport request not found");
+        ServerPlayer source = Objects.requireNonNull(server.getPlayerList().getPlayer(playerSourceUUID), "source player for teleport request not found");
         Vec3 position = target.position();
 
         source.teleportTo(position.x, position.y, position.z);

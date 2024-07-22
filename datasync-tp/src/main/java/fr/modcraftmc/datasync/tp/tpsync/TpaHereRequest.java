@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.tp.DatasyncTp;
 import fr.modcraftmc.datasync.tp.message.TpaHereRequestMessage;
 import net.minecraft.network.chat.Component;
@@ -8,39 +9,37 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
 public class TpaHereRequest {
-    private final String playerSourceName;
-    private final String playerTargetName;
-    private final int time;
+    private ISyncPlayer playerSource;
+    private ISyncPlayer playerTarget;
+    private int time;
 
-    public TpaHereRequest(String playerSourceName, String playerTargetName) {
-        this(playerSourceName, playerTargetName, (int) System.currentTimeMillis() / 1000);
+    public TpaHereRequest(ISyncPlayer playerSource, ISyncPlayer playerTarget) {
+        this(playerSource, playerTarget, (int) System.currentTimeMillis() / 1000);
     }
 
-    public TpaHereRequest(String playerSource, String playerTargetName, int time) {
-        this.playerSourceName = playerSource;
-        this.playerTargetName = playerTargetName;
+    public TpaHereRequest(ISyncPlayer playerSource, ISyncPlayer playerTarget, int time) {
+        this.playerSource = playerSource;
+        this.playerTarget = playerTarget;
         this.time = time;
     }
 
     public void fire() {
-        ServerPlayer playerSource = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayerByName(playerSourceName);
-        if(playerSource == null){
+        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(playerSource.getUUID());
+        if(player == null){
             DatasyncTp.LOGGER.warn("Trying to send a tpa here request from a player not on current server");
             return;
         }
 
-        CrossServerCoreAPI.instance.findPlayer(playerTargetName).ifPresentOrElse(targetServer -> {
-            playerSource.sendSystemMessage(Component.literal("Sending tpa here request to " + playerTargetName));
-            targetServer.sendMessage(new TpaHereRequestMessage(this).serializeToString());
-        }, () -> playerSource.sendSystemMessage(Component.literal("Player " + playerTargetName + " not found")));
+        player.sendSystemMessage(Component.literal("Sending tpa here request to " + playerTarget));
+        playerTarget.getServer().sendMessage(new TpaHereRequestMessage(this));
     }
 
-    public String getPlayerSourceName() {
-        return playerSourceName;
+    public ISyncPlayer getPlayerSource() {
+        return playerSource;
     }
 
-    public String getPlayerTargetName() {
-        return playerTargetName;
+    public ISyncPlayer getPlayerTarget() {
+        return playerTarget;
     }
 
     public int getTime() {

@@ -1,7 +1,8 @@
 package fr.modcraftmc.datasync.tp.commands;
 
-import com.mojang.brigadier.arguments.StringArgumentType;
-import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.tp.tpsync.TpaHereRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaHereRequestHandler;
 import net.minecraft.commands.CommandSourceStack;
@@ -12,9 +13,8 @@ public class TpaHereCommand extends CommandModule{
     @Override
     protected void buildCommand() {
         ROOT_COMMANDS.add(Commands.literal("tpahere")
-                .then(Commands.argument("target", StringArgumentType.word())
-                        .suggests(new NetworkPlayerSuggestionProvider())
-                        .executes(context -> tpa(context.getSource(), StringArgumentType.getString(context, "target")))
+                .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
+                        .executes(context -> tpa(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
                 ));
         ROOT_COMMANDS.add(Commands.literal("tpahereaccept")
                 .executes(context -> tpaccept(context.getSource()))
@@ -24,12 +24,16 @@ public class TpaHereCommand extends CommandModule{
         );
     }
 
-    private int tpa(CommandSourceStack source, String target) {
+    private static ISyncPlayer getSyncPlayerFromCommand(CommandSourceStack source) {
+        return CrossServerCoreAPI.getPlayer(source.getPlayer().getUUID()).orElseThrow();
+    }
+
+    private int tpa(CommandSourceStack source, ISyncPlayer target) {
         if(!source.isPlayer()) {
             source.sendFailure(Component.literal("You must be a player to use this command"));
             return 0;
         }
-        new TpaHereRequest(source.getPlayer().getName().getString(), target).fire();
+        new TpaHereRequest(getSyncPlayerFromCommand(source), target).fire();
         return 1;
     }
 

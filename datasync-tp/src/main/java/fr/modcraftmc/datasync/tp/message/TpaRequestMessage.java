@@ -1,51 +1,35 @@
 package fr.modcraftmc.datasync.tp.message;
 
-import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
-import net.minecraftforge.server.ServerLifecycleHooks;
 
+@AutoRegister("tpa_request_message")
 public class TpaRequestMessage extends BaseMessage {
-    public static final String MESSAGE_NAME = "tpa_request_message";
-
-    public String playerSourceName;
-    public String playerTargetName;
+    @AutoSerialize
+    public ISyncPlayer playerSource;
+    @AutoSerialize
+    public ISyncPlayer playerTarget;
+    @AutoSerialize
     public int time;
 
-    public TpaRequestMessage(String playerSourceName, String playerTargetName, int time) {
-        super(MESSAGE_NAME);
-        this.playerSourceName = playerSourceName;
-        this.playerTargetName = playerTargetName;
+    private TpaRequestMessage() {}
+
+    public TpaRequestMessage(ISyncPlayer playerSource, ISyncPlayer playerTarget, int time) {
+        this.playerSource = playerSource;
+        this.playerTarget = playerTarget;
         this.time = time;
     }
 
     public TpaRequestMessage(TpaRequest tpaRequest) {
-        this(tpaRequest.getPlayerSourceName(), tpaRequest.getPlayerTargetName(), tpaRequest.getTime());
-    }
-
-    public JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("playerSourceName", playerSourceName);
-        jsonObject.addProperty("playerTargetName", playerTargetName);
-        jsonObject.addProperty("time", time);
-        return jsonObject;
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    public static TpaRequestMessage deserialize(JsonObject json) {
-        String playerSourceName = json.get("playerSourceName").getAsString();
-        String playerTargetName = json.get("playerTargetName").getAsString();
-        int time = json.get("time").getAsInt();
-        return new TpaRequestMessage(playerSourceName, playerTargetName, time);
+        this(tpaRequest.getPlayerSource(), tpaRequest.getPlayerTarget(), tpaRequest.getTime());
     }
 
     public TpaRequest getTpaRequest() {
-        return new TpaRequest(playerSourceName, playerTargetName, time);
+        return new TpaRequest(playerSource, playerTarget, time);
     }
 
     @Override

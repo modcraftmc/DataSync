@@ -1,50 +1,35 @@
 package fr.modcraftmc.datasync.tp.message;
 
-import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpRequestHandler;
 
+@AutoRegister("tp_request_message")
 public class TpRequestMessage extends BaseMessage {
-    public static final String MESSAGE_NAME = "tp_request_message";
-    public String playerSourceName;
-    public String playerTargetName;
+    @AutoSerialize
+    public ISyncPlayer playerSource;
+    @AutoSerialize
+    public ISyncPlayer playerTarget;
+    @AutoSerialize
     public int time;
 
+    private TpRequestMessage() {}
+
     public TpRequestMessage(TpRequest tpRequest) {
-        this(tpRequest.getPlayerSourceName(), tpRequest.getPlayerTargetName(), tpRequest.getTime());
+        this(tpRequest.getPlayerSource(), tpRequest.getPlayerTarget(), tpRequest.getTime());
     }
 
-    public TpRequestMessage(String playerSourceName, String playerTargetName, int time) {
-        super(MESSAGE_NAME);
-        this.playerSourceName = playerSourceName;
-        this.playerTargetName = playerTargetName;
+    public TpRequestMessage(ISyncPlayer playerSource, ISyncPlayer playerTarget, int time) {
+        this.playerSource = playerSource;
+        this.playerTarget = playerTarget;
         this.time = time;
     }
 
     @Override
-    protected JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("playerSourceName", playerSourceName);
-        jsonObject.addProperty("playerTargetName", playerTargetName);
-        jsonObject.addProperty("time", time);
-        return jsonObject;
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    public static TpRequestMessage deserialize(JsonObject json) {
-        String playerSourceName = json.get("playerSourceName").getAsString();
-        String playerTargetName = json.get("playerTargetName").getAsString();
-        int time = json.get("time").getAsInt();
-        return new TpRequestMessage(playerSourceName, playerTargetName, time);
-    }
-
-    @Override
     public void handle() {
-        TpRequestHandler.handle(new TpRequest(playerSourceName, playerTargetName, time));
+        TpRequestHandler.handle(new TpRequest(playerSource, playerTarget, time));
     }
 }

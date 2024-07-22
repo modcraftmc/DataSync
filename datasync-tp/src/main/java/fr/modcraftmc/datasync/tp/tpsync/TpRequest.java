@@ -2,45 +2,43 @@ package fr.modcraftmc.datasync.tp.tpsync;
 
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;
 import fr.modcraftmc.datasync.tp.message.TpRequestMessage;
-import io.netty.buffer.Unpooled;
-import net.minecraft.network.FriendlyByteBuf;
 
 public class TpRequest {
-    private final String playerSourceName;
-    private final String playerTargetName;
+    private final ISyncPlayer playerSource;
+    private final ISyncPlayer playerTarget;
     private final int time;
 
-    public TpRequest(String playerSourceName, String playerTargetName) {
-        this(playerSourceName, playerTargetName, (int) System.currentTimeMillis() / 1000);
+    public TpRequest(ISyncPlayer playerSource, ISyncPlayer playerTarget) {
+        this(playerSource, playerTarget, (int) System.currentTimeMillis() / 1000);
     }
 
-    public TpRequest(String playerSourceName, String playerTargetName, int time) {
-        this.playerSourceName = playerSourceName;
-        this.playerTargetName = playerTargetName;
+    public TpRequest(ISyncPlayer playerSource, ISyncPlayer playerTarget, int time) {
+        this.playerSource = playerSource;
+        this.playerTarget = playerTarget;
         this.time = time;
     }
 
     public void fire() {
-        CrossServerCoreAPI.instance.findPlayer(playerTargetName).ifPresent(targetServer -> {
-            CrossServerCoreAPI.instance.findPlayer(playerSourceName).ifPresent(sourceServer -> {
-                if(!sourceServer.getName().equals(targetServer.getName()))
-                    sendTransferPlayerProxyOrder(playerSourceName, targetServer.getName());
-                targetServer.sendMessage(new TpRequestMessage(this).serializeToString());
-            });
-        });
+        ISyncServer targetServer = playerTarget.getServer();
+
+        if(!playerSource.getServer().equals(targetServer))
+            sendTransferPlayerProxyOrder(playerSource, targetServer);
+        targetServer.sendMessage(new TpRequestMessage(this));
     }
 
-    private void sendTransferPlayerProxyOrder(String playerToTransfer, String serverName){
-        CrossServerCoreProxyExtensionAPI.instance.transferPlayer(playerToTransfer, serverName);
+    private void sendTransferPlayerProxyOrder(ISyncPlayer player, ISyncServer server){
+        CrossServerCoreProxyExtensionAPI.transferPlayer(player, server);
     }
 
-    public String getPlayerSourceName() {
-        return playerSourceName;
+    public ISyncPlayer getPlayerSource() {
+        return playerSource;
     }
 
-    public String getPlayerTargetName() {
-        return playerTargetName;
+    public ISyncPlayer getPlayerTarget() {
+        return playerTarget;
     }
 
     public int getTime() {

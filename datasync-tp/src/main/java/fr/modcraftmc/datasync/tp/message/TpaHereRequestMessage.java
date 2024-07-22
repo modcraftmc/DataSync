@@ -1,49 +1,32 @@
 package fr.modcraftmc.datasync.tp.message;
 
 import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.tp.tpsync.TpaHereRequest;
 import fr.modcraftmc.datasync.tp.tpsync.TpaHereRequestHandler;
-import fr.modcraftmc.datasync.tp.tpsync.TpaRequest;
-import fr.modcraftmc.datasync.tp.tpsync.TpaRequestHandler;
-import net.minecraftforge.server.ServerLifecycleHooks;
 
+@AutoRegister("tpa_here_request_message")
 public class TpaHereRequestMessage extends BaseMessage {
-    public static final String MESSAGE_NAME = "tpa_here_request_message";
-
-    public String playerSourceName;
-    public String playerTargetName;
+    @AutoSerialize
+    public ISyncPlayer playerSourceName;
+    @AutoSerialize
+    public ISyncPlayer playerTargetName;
+    @AutoSerialize
     public int time;
 
-    public TpaHereRequestMessage(String playerSourceName, String playerTargetName, int time) {
-        super(MESSAGE_NAME);
+    private TpaHereRequestMessage() {}
+
+    public TpaHereRequestMessage(ISyncPlayer playerSourceName, ISyncPlayer playerTargetName, int time) {
         this.playerSourceName = playerSourceName;
         this.playerTargetName = playerTargetName;
         this.time = time;
     }
 
     public TpaHereRequestMessage(TpaHereRequest tpaRequest) {
-        this(tpaRequest.getPlayerSourceName(), tpaRequest.getPlayerTargetName(), tpaRequest.getTime());
-    }
-
-    public JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("playerSourceName", playerSourceName);
-        jsonObject.addProperty("playerTargetName", playerTargetName);
-        jsonObject.addProperty("time", time);
-        return jsonObject;
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    public static TpaHereRequestMessage deserialize(JsonObject json) {
-        String playerSourceName = json.get("playerSourceName").getAsString();
-        String playerTargetName = json.get("playerTargetName").getAsString();
-        int time = json.get("time").getAsInt();
-        return new TpaHereRequestMessage(playerSourceName, playerTargetName, time);
+        this(tpaRequest.getPlayerSource(), tpaRequest.getPlayerTarget(), tpaRequest.getTime());
     }
 
     public TpaHereRequest getTpaHereRequest() {

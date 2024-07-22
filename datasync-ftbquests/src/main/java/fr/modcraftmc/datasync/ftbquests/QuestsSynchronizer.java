@@ -22,6 +22,9 @@ import dev.ftb.mods.ftbquests.quest.task.TaskType;
 import dev.ftb.mods.ftbteams.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.data.Team;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
 import fr.modcraftmc.datasync.ftbquests.Serialization.SerializationUtil;
 import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
 import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
@@ -30,6 +33,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
+import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModList;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.Document;
@@ -43,12 +47,14 @@ public class QuestsSynchronizer {
 
     public boolean FTBQuestsLoaded = false;
 
-    public MongoCollection<Document> databaseTeamsQuestsData;
+    public ISharedDataStore databaseTeamsQuestsData = SharedDataStoreProvider.get(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
 
-    public void register() {
+    public QuestsSynchronizer() {
+        if(!ModList.get().isLoaded(References.FTBQUESTS_MOD_ID))
+            return;
         DatasyncFtbQuests.LOGGER.info("FTBQuests is loaded, enabling FTBQuests sync");
         FTBQuestsLoaded = true;
-        databaseTeamsQuestsData = CrossServerCoreAPI.instance.getOrCreateMongoCollection(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
+
         ObjectCompletedEvent.QuestEvent.GENERIC.register((QuestEvent) -> {
             syncTeamQuests(QuestEvent.getData());
             return EventResult.pass();
@@ -57,6 +63,12 @@ public class QuestsSynchronizer {
             syncTeamQuests(TaskEvent.getData());
             return EventResult.pass();
         });
+
+        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+    }
+
+    private void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        loadTeamsQuests();
     }
 
     public void syncTeamQuests(TeamData teamData) {
@@ -67,15 +79,15 @@ public class QuestsSynchronizer {
 
         Team team = FTBTeamsAPI.getManager().getTeamByID(teamData.uuid);
         saveTeamQuestsToDB(team, questsDataJson);
-        SyncTeamQuests syncQuestsMessage = new SyncTeamQuests(teamData.uuid.toString(), questsDataJson);
+        SyncTeamQuests syncQuestsMessage = new SyncTeamQuests(teamData.uuid, questsDataJson);
 
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(syncQuestsMessage);
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(syncQuestsMessage);
     }
 
     public void handleTeamQuestsSync(SyncTeamQuests syncQuestsMessage){
         if(!FTBQuestsLoaded) return;
         CompoundTag questsData = SerializationUtil.GetNbt(syncQuestsMessage.questsData);
-        Team team = FTBTeamsAPI.getManager().getTeamByID(UUID.fromString(syncQuestsMessage.teamUUID));
+        Team team = FTBTeamsAPI.getManager().getTeamByID(syncQuestsMessage.teamUUID);
         TeamData teamData = FTBQuests.PROXY.getQuestFile(false).getData(team);
 
         teamData.deserializeNBT(SNBTCompoundTag.of(questsData));
@@ -105,16 +117,13 @@ public class QuestsSynchronizer {
                 .append("name", team.getDisplayName())
                 .append("lastUpdated", new Timestamp(date.getTime()).toString())
                 .append("teamQuestsData", teamQuestsDataJson.toString());
-        databaseTeamsQuestsData.deleteMany(new Document("uuid", uuid));
-        if(!databaseTeamsQuestsData.insertOne(document).wasAcknowledged()){
-            DatasyncFtbQuests.LOGGER.error(String.format("Error while saving quests data for team %s", team.getDisplayName()));
-        }
+        databaseTeamsQuestsData.accessOrThrow().updateOne(new Document("uuid", uuid), document);
     }
 
     public void loadTeamsQuests(){
         DatasyncFtbQuests.LOGGER.debug("Loading teams quests");
         Gson gson = new Gson();
-        databaseTeamsQuestsData.find().forEach(data -> {
+        databaseTeamsQuestsData.accessOrThrow().find().forEach(data -> {
             JsonElement teamQuestsDataJson = gson.fromJson(data.getString("teamQuestsData"), JsonElement.class);
             CompoundTag teamQuestsData = SerializationUtil.GetNbt(teamQuestsDataJson);
 
@@ -136,7 +145,7 @@ public class QuestsSynchronizer {
         CompoundTag questsData = serializeQuests(FTBQuests.PROXY.getQuestFile(false));
         SyncQuests syncQuestsMessage = new SyncQuests(SerializationUtil.ToJsonElement(questsData));
 
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(syncQuestsMessage);
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(syncQuestsMessage);
     }
 
     public void handleSyncQuests(SyncQuests syncQuestsMessage){

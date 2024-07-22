@@ -22,16 +22,8 @@ public class DatasyncFtbQuests {
 
     public DatasyncFtbQuests() {
         MinecraftForge.EVENT_BUS.addListener(this::commandResister);
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
     }
 
-    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        if(!ModList.get().isLoaded(References.FTBQUESTS_MOD_ID)) return;
-        event.getInstance().registerCrossMessage(SyncQuests.MESSAGE_NAME, SyncQuests::deserialize);
-        event.getInstance().registerCrossMessage(SyncTeamQuests.MESSAGE_NAME, SyncTeamQuests::deserialize);
-        questsSynchronizer.register();
-        questsSynchronizer.loadTeamsQuests();
-    }
 
     public void commandResister(RegisterCommandsEvent event){
         DatasyncFtbQuests.LOGGER.debug("Registering commands");

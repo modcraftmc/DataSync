@@ -19,6 +19,8 @@ public class SyncTeamMessage extends BaseMessage {
     @AutoSerialize
     public Component text;
 
+    public SyncTeamMessage() {}
+
     public SyncTeamMessage(UUID teamUUID, UUID playerUUID, Component text) {
         this.teamUUID = teamUUID;
         this.playerUUID = playerUUID;

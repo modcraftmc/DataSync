@@ -21,6 +21,8 @@ public class SyncTeams extends BaseMessage {
     @AutoSerialize
     public JsonElement teamsData;
 
+    public SyncTeams() {}
+
     public SyncTeams(UUID teamUUID, String teamType, JsonElement teamsData) {
         this(teamUUID, teamType, teamsData, false);
     }

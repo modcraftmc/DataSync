@@ -1,11 +1,8 @@
 package fr.modcraftmc.datasync.inventory.serialization;
 
-import com.google.gson.JsonElement;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import com.mojang.serialization.JsonOps;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
-import net.minecraft.world.item.ItemStack;
 
 
 public class SerializationUtil {

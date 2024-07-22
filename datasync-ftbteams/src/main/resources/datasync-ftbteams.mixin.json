@@ -6,8 +6,8 @@
   ],
   "server": [
     "MixinPartyTeam",
-    "MixinTeam",
-    "MixinPlayerGUIOperationMessage"
+    "MixinPlayerGUIOperationMessage",
+    "MixinTeam"
   ],
   "injectors": {
     "defaultRequire": 1

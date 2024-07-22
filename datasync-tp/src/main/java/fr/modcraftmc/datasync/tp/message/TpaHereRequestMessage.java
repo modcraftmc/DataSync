@@ -1,6 +1,5 @@
 package fr.modcraftmc.datasync.tp.message;
 
-import com.google.gson.JsonObject;
 import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
 import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;

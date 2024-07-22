@@ -1,16 +1,9 @@
 package fr.modcraftmc.datasync.ftbquests;
 
 import com.mojang.logging.LogUtils;
-import dev.architectury.event.EventResult;
-import dev.ftb.mods.ftbquests.events.ObjectCompletedEvent;
-import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
-import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.ftbquests.commands.DatasyncFtbQuestsCommand;
-import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
-import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.RegisterCommandsEvent;
-import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 

@@ -1,6 +1,5 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
-import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;

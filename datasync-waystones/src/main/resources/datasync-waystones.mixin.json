@@ -5,10 +5,10 @@
   "client" : [
   ],
   "server": [
-    "WaystoneSyncManagerMixin",
     "PlayerWaystoneManagerMixin",
     "WaystoneManagerMixin",
-    "WaystoneMixin"
+    "WaystoneMixin",
+    "WaystoneSyncManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -3,7 +3,6 @@ package fr.modcraftmc.datasync.ftbquests;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mongodb.client.MongoCollection;
 import dev.architectury.event.EventResult;
 import dev.ftb.mods.ftblibrary.snbt.SNBTCompoundTag;
 import dev.ftb.mods.ftbquests.FTBQuests;

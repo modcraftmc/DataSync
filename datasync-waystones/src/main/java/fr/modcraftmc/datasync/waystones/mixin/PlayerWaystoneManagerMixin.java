@@ -3,7 +3,6 @@ package fr.modcraftmc.datasync.waystones.mixin;
 import com.mojang.datafixers.util.Either;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
-import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 import fr.modcraftmc.datasync.waystones.message.TeleportToWaystone;

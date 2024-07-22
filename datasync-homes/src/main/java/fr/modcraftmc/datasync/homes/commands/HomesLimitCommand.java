@@ -1,7 +1,6 @@
 package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
-import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;

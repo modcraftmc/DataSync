@@ -1,15 +1,11 @@
 package fr.modcraftmc.datasync.waystones.message;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
 import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 

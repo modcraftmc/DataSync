@@ -7,7 +7,6 @@ import dev.ftb.mods.ftbteams.data.PartyTeam;
 import dev.ftb.mods.ftbteams.data.TeamRank;
 import dev.ftb.mods.ftbteams.net.PlayerGUIOperationMessage;
 import fr.modcraftmc.datasync.ftbteams.DatasyncFtbTeam;
-import fr.modcraftmc.datasync.ftbteams.TeamsSynchronizer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;

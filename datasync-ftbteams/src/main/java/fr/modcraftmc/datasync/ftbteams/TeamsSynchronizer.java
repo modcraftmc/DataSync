@@ -3,7 +3,6 @@ package fr.modcraftmc.datasync.ftbteams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mongodb.client.MongoCollection;
 import dev.ftb.mods.ftbteams.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.data.*;
 import dev.ftb.mods.ftbteams.event.TeamEvent;
@@ -27,7 +26,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.fml.ModList;
-import net.minecraftforge.fml.ModLoader;
 import org.bson.Document;
 
 import java.io.IOException;

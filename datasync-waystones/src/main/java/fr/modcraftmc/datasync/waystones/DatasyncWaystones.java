@@ -3,10 +3,8 @@ package fr.modcraftmc.datasync.waystones;
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
-import fr.modcraftmc.datasync.waystones.message.*;
 import fr.modcraftmc.datasync.waystones.message.autoserializer.IWaystoneSerialier;
 import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 

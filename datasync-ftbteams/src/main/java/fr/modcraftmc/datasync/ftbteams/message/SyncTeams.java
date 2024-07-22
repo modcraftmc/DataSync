@@ -1,12 +1,10 @@
 package fr.modcraftmc.datasync.ftbteams.message;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
 import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.ftbteams.DatasyncFtbTeam;
-import fr.modcraftmc.datasync.ftbteams.TeamsSynchronizer;
 
 import java.util.UUID;
 

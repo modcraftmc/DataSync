@@ -1,43 +1,31 @@
 package fr.modcraftmc.datasync.waystones.message;
 
 import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
 import java.util.UUID;
 
+@AutoRegister("teleport_to_waystone")
 public class TeleportToWaystone extends BaseMessage {
 
-    public static final String MESSAGE_NAME = "teleport_to_waystone";
-
-    private String playerName;
+    @AutoSerialize
+    private ISyncPlayer player;
+    @AutoSerialize
     private UUID waystoneUUID;
 
-    public TeleportToWaystone(String playerName, UUID waystoneUUID) {
-        super(MESSAGE_NAME);
-        this.playerName = playerName;
+    private TeleportToWaystone() {}
+
+    public TeleportToWaystone(ISyncPlayer player, UUID waystoneUUID) {
+        this.player = player;
         this.waystoneUUID = waystoneUUID;
     }
 
     @Override
-    protected JsonObject serialize() {
-        JsonObject object = super.serialize();
-        object.addProperty("playerName", playerName);
-        object.addProperty("WaystoneUUID", waystoneUUID.toString());
-        return object;
-    }
-
-    public static TeleportToWaystone deserialize(JsonObject json) {
-        return new TeleportToWaystone(json.get("playerName").getAsString(), UUID.fromString(json.get("WaystoneUUID").getAsString()));
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    @Override
     public void handle() {
-        DatasyncWaystones.waystoneManager.addPendingWaystoneTp(playerName, waystoneUUID);
+        DatasyncWaystones.waystoneManager.addPendingWaystoneTp(player, waystoneUUID);
     }
 }

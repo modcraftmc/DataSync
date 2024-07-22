@@ -3,27 +3,34 @@ package fr.modcraftmc.datasync.waystones.message;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-public class PlayerWaystonesData extends BaseMessage {
-    public static final String MESSAGE_NAME = "player_waystones_data";
 
-    private String playerName;
+@AutoRegister("player_waystones_data")
+public class PlayerWaystonesData extends BaseMessage {
+
+    @AutoSerialize
+    private ISyncPlayer player;
+    @AutoSerialize
     private List<UUID> waystones;
 
-    public PlayerWaystonesData(String playerName, List<UUID> waystones) {
-        super(MESSAGE_NAME);
-        this.playerName = playerName;
+    private PlayerWaystonesData() {}
+
+    public PlayerWaystonesData(ISyncPlayer player, List<UUID> waystones) {
+        this.player = player;
         this.waystones = waystones;
     }
 
-    public String getPlayerName() {
-        return playerName;
+    public ISyncPlayer getPlayer() {
+        return player;
     }
 
     public List<UUID> getWaystones() {
@@ -31,37 +38,7 @@ public class PlayerWaystonesData extends BaseMessage {
     }
 
     @Override
-    protected JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("player", playerName);
-        JsonArray waystonesArray = new JsonArray();
-        for (UUID waystone : waystones) {
-            waystonesArray.add(waystone.toString());
-        }
-        jsonObject.add("waystones", waystonesArray);
-
-        return jsonObject;
-    }
-
-    public static PlayerWaystonesData deserialize(JsonObject json) {
-        String playerName = json.get("player").getAsString();
-        List<UUID> waystones = new ArrayList<>();
-        JsonArray waystonesArray = json.get("waystones").getAsJsonArray();
-        for (JsonElement waystoneElement : waystonesArray) {
-            waystones.add(UUID.fromString(waystoneElement.getAsString()));
-        }
-
-        return new PlayerWaystonesData(playerName, waystones);
-    }
-
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    @Override
     public void handle() {
-        DatasyncWaystones.waystoneManager.addPendingWaystoneData(playerName, waystones);
+        DatasyncWaystones.waystoneManager.addPendingWaystoneData(player, waystones);
     }
 }

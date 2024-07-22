@@ -16,6 +16,6 @@ public class WaystoneSyncManagerMixin {
 
     @Inject(method = "sendWaystoneUpdateToAll", at = @At("HEAD"))
     private static void sendMessage(MinecraftServer server, IWaystone waystone, CallbackInfo ci) {
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
     }
 }

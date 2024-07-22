@@ -3,6 +3,8 @@ package fr.modcraftmc.datasync.waystones.message;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.serialization.JsonOps;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
 import net.blay09.mods.waystones.api.IWaystone;
@@ -13,35 +15,16 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.server.ServerLifecycleHooks;
 
+@AutoRegister("delete_waystone")
 public class DeleteWaystone extends BaseMessage {
-    public static final String MESSAGE_NAME = "delete_waystone";
 
+    @AutoSerialize
     private IWaystone iwaystone;
 
+    private DeleteWaystone() {}
+
     public DeleteWaystone(IWaystone waystone) {
-        super(MESSAGE_NAME);
         this.iwaystone = waystone;
-    }
-
-    @Override
-    protected JsonObject serialize() {
-        JsonObject object = super.serialize();
-        CompoundTag tag = new CompoundTag();
-        Waystone.write(iwaystone, tag);
-        JsonElement waystoneJson = CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, tag).result().get();
-        object.add("waystone", waystoneJson);
-
-        return object;
-    }
-
-    public static DeleteWaystone deserialize(JsonObject json) {
-        CompoundTag waystoneTag = CompoundTag.CODEC.parse(JsonOps.INSTANCE, json.get("waystone")).result().get();
-        return new DeleteWaystone(Waystone.read(waystoneTag));
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
     }
 
     @Override

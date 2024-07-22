@@ -21,13 +21,13 @@ public class WaystoneManagerMixin {
 
     @Inject(method = "updateWaystone", at = @At("HEAD"))
     protected void updateWaystoneServer(IWaystone waystone, CallbackInfo ci) {
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new UpdateWaystone(waystone));
     }
 
     @Inject(method = "removeWaystone", at = @At("HEAD"))
     protected void removeWaystoneServer(IWaystone waystone, CallbackInfo ci) {
         if(WaystoneManager.get(ServerLifecycleHooks.getCurrentServer()).getWaystoneById(waystone.getWaystoneUid()).isPresent())
-            CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new DeleteWaystone(waystone));
+            CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new DeleteWaystone(waystone));
         DatasyncWaystones.waystoneManager.dropWaystoneServer(waystone);
     }
 }

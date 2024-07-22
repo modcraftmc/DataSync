@@ -1,9 +1,12 @@
 package fr.modcraftmc.datasync.waystones;
 
 import com.mojang.logging.LogUtils;
+import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.waystones.message.*;
+import fr.modcraftmc.datasync.waystones.message.autoserializer.IWaystoneSerialier;
 import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.eventbus.api.Event;
 import net.minecraftforge.fml.common.Mod;
 import org.slf4j.Logger;
 
@@ -17,20 +20,14 @@ public class DatasyncWaystones {
     public DatasyncWaystones() {
         LOGGER.info("DatasyncWaystones loading...");
 
-        MinecraftForge.EVENT_BUS.addListener(waystoneManager::onPlayerJoined);
-        MinecraftForge.EVENT_BUS.addListener(waystoneManager::onPlayerLeaved);
-        MinecraftForge.EVENT_BUS.addListener(waystoneManager::onServerStop);
         MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+
         LOGGER.info("DatasyncWaystones loaded !");
     }
 
-    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        event.getInstance().registerCrossMessage(UpdateWaystone.MESSAGE_NAME, UpdateWaystone::deserialize);
-        event.getInstance().registerCrossMessage(TeleportToWaystone.MESSAGE_NAME, TeleportToWaystone::deserialize);
-        event.getInstance().registerCrossMessage(DeleteWaystone.MESSAGE_NAME, DeleteWaystone::deserialize);
-        event.getInstance().registerCrossMessage(PlayerWaystonesData.MESSAGE_NAME, PlayerWaystonesData::deserialize);
-        event.getInstance().registerCrossMessage(WaystoneRecovery.MESSAGE_NAME, WaystoneRecovery::deserialize);
-        waystoneManager.initialiseDatabaseConnection();
-        waystoneManager.loadWaystonesDataFromDatabase();
+    private void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
+        CrossServerCoreAPI.getMessageAutoPropertySerializer().registerFieldSerializer(new IWaystoneSerialier());
     }
+
+
 }

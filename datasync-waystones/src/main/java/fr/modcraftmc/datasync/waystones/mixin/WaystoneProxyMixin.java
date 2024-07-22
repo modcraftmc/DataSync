@@ -13,7 +13,7 @@ public class WaystoneProxyMixin {
     @Inject(method = "isValid", at = @At("HEAD"), cancellable = true)
     protected void isValid(CallbackInfoReturnable<Boolean> cir) {
         String waystoneServer = DatasyncWaystones.waystoneManager.getWaystoneServer((WaystoneProxy) (Object) this);
-        if(waystoneServer != null && !waystoneServer.equals(CrossServerCoreAPI.instance.getServerName())) { // only override if the waystone is on another server
+        if(waystoneServer != null && !waystoneServer.equals(CrossServerCoreAPI.getServerName())) { // only override if the waystone is on another server
             cir.setReturnValue(true);
         }
     }

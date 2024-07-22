@@ -15,12 +15,6 @@ public class DatasyncFtbTeam {
     public static final Logger LOGGER = LogUtils.getLogger();
     public static final TeamsSynchronizer teamsSynchronizer = new TeamsSynchronizer();
     public DatasyncFtbTeam() {
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
-    }
 
-    public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        event.getInstance().registerCrossMessage(SyncTeams.MESSAGE_NAME, SyncTeams::deserialize);
-        event.getInstance().registerCrossMessage(SyncTeamMessage.MESSAGE_NAME, SyncTeamMessage::deserialize);
-        teamsSynchronizer.register();
     }
 }

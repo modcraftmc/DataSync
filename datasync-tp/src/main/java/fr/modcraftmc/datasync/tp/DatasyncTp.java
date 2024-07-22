@@ -29,9 +29,7 @@ public class DatasyncTp {
     }
 
     public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        event.getInstance().registerCrossMessage(TpaRequestMessage.MESSAGE_NAME, TpaRequestMessage::deserialize);
-        event.getInstance().registerCrossMessage(TpRequestMessage.MESSAGE_NAME, TpRequestMessage::deserialize);
-        event.getInstance().registerCrossMessage(TpaHereRequestMessage.MESSAGE_NAME, TpaHereRequestMessage::deserialize);
+
     }
 
     public void commandResister(RegisterCommandsEvent event){

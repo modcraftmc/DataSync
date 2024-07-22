@@ -25,7 +25,6 @@ public class DatasyncInventory {
     }
 
     public void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
-        PlayerDataSynchronizer.databasePlayerData = event.getInstance().getOrCreateMongoCollection(References.PLAYER_DATA_COLLECTION_NAME);
-        event.getInstance().registerCrossMessage(TransferData.MESSAGE_NAME, TransferData::deserialize);
+
     }
 }

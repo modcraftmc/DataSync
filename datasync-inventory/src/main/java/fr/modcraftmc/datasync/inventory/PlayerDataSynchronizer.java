@@ -1,9 +1,9 @@
 package fr.modcraftmc.datasync.inventory;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
-import com.mongodb.client.MongoCollection;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
@@ -20,7 +20,7 @@ import java.util.*;
 public class PlayerDataSynchronizer {
     private static List<TemporalPlayerData> playerData = new ArrayList<>();
     private static int keepTime = 30; // seconds to hold data
-    public static MongoCollection<Document> databasePlayerData;
+    public static ISharedDataStore databasePlayerData = SharedDataStoreProvider.get(References.PLAYER_DATA_COLLECTION_NAME);
     private static List<ServerPlayer> savablePlayers = new ArrayList<>();
 
     public static void checkSavablePlayers(){
@@ -34,12 +34,14 @@ public class PlayerDataSynchronizer {
 
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
-        String playerName = player.getName().getString();
+        CrossServerCoreAPI.getPlayer(player.getUUID()).ifPresentOrElse(syncPlayer -> {
+            if (loadDataFromTransferBuffer(player, syncPlayer)) return;
+            DatasyncInventory.LOGGER.info(String.format("No transfer data found for player %s (normal if first connection on this group)", syncPlayer.getName()));
 
-        if (loadDataFromTransferBuffer(player, playerName)) return;
-        DatasyncInventory.LOGGER.info(String.format("No transfer data found for player %s (normal if first connection on this group)", playerName));
-
-        loadDataFromDatabase(player, playerName);
+            loadDataFromDatabase(player, syncPlayer);
+        }, () -> {
+            DatasyncInventory.LOGGER.error("Player not found in cross server core for data transfer (receive)");
+        });
     }
 
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
@@ -53,12 +55,17 @@ public class PlayerDataSynchronizer {
         checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         if(savablePlayers.contains(player)) {
-            broadcastPlayerDataToTransferBuffer(player.getName().getString(), PlayerSerializer.serializePlayer(player));
+            CrossServerCoreAPI.getPlayer(player.getUUID()).ifPresentOrElse(syncPlayer -> {
+                broadcastPlayerDataToTransferBuffer(syncPlayer, PlayerSerializer.serializePlayer(player));
+            }, () -> {
+                DatasyncInventory.LOGGER.error("Player not found in cross server core for data transfer (send)");
+            });
         }
     }
 
-    private static boolean loadDataFromDatabase(ServerPlayer player, String playerName) {
-        Document document = databasePlayerData.find(new Document("name", playerName)).first();
+    private static boolean loadDataFromDatabase(ServerPlayer player, ISyncPlayer syncPlayer) {
+        String playerName = syncPlayer.getName();
+        Document document = databasePlayerData.accessOrThrow().find(new Document("name", playerName)).first();
         if (document == null) {
             DatasyncInventory.LOGGER.info(String.format("Creating new data for player %s", playerName));
             document = new Document("name", playerName).append("data", "{}");
@@ -75,14 +82,13 @@ public class PlayerDataSynchronizer {
         Document document = new Document("name", player.getName().getString())
                 .append("saveDate", new Timestamp(date.getTime()).toString())
                 .append("data", playerData);
-        databasePlayerData.deleteMany(new Document("name", player.getName().getString()));
-        databasePlayerData.insertOne(document).wasAcknowledged();
+        databasePlayerData.accessOrThrow().updateOne(new Document("name", player.getName().getString()), document);
     }
 
-    private static boolean loadDataFromTransferBuffer(ServerPlayer player, String playerName) {
+    private static boolean loadDataFromTransferBuffer(ServerPlayer player, ISyncPlayer syncPlayer) {
         checkTemporalPlayerData();
         for (TemporalPlayerData temporalPlayerData : playerData) {
-            if (temporalPlayerData.name.equals(playerName)) {
+            if (temporalPlayerData.player.equals(syncPlayer)) {
                 PlayerSerializer.deserializePlayer(temporalPlayerData.data, player);
                 playerData.remove(temporalPlayerData);
                 if(!savablePlayers.contains(player))
@@ -93,28 +99,28 @@ public class PlayerDataSynchronizer {
         return false;
     }
 
-    public static void broadcastPlayerDataToTransferBuffer(String playerName, String data) {
-        CrossServerCoreAPI.instance.sendCrossMessageToAllOtherServer(new TransferData(playerName, data));
+    public static void broadcastPlayerDataToTransferBuffer(ISyncPlayer syncPlayer, String data) {
+        CrossServerCoreAPI.sendCrossMessageToAllOtherServer(new TransferData(syncPlayer, data));
     }
 
-    public static void pushDataToTransferBuffer(String playerName, String data) {
-        playerData.removeIf(temporalPlayerData -> temporalPlayerData.name.equals(playerName));
-        playerData.add(new TemporalPlayerData(playerName, data));
+    public static void pushDataToTransferBuffer(ISyncPlayer syncPlayer, String data) {
+        playerData.removeIf(temporalPlayerData -> temporalPlayerData.player.equals(syncPlayer));
+        playerData.add(new TemporalPlayerData(syncPlayer, data));
     }
 
     public static class TemporalPlayerData {
-        public String name;
+        public ISyncPlayer player;
         public String data;
         public int time;
 
-        public TemporalPlayerData(String name, String data, int time) {
-            this.name = name;
+        public TemporalPlayerData(ISyncPlayer player, String data, int time) {
+            this.player = player;
             this.data = data;
             this.time = time;
         }
 
-        public TemporalPlayerData(String name, String data) {
-            this(name, data, (int) (System.currentTimeMillis() / 1000));
+        public TemporalPlayerData(ISyncPlayer player, String data) {
+            this(player, data, (int) (System.currentTimeMillis() / 1000));
         }
     }
 }

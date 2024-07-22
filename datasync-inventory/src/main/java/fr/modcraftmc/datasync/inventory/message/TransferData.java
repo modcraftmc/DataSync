@@ -1,42 +1,28 @@
 package fr.modcraftmc.datasync.inventory.message;
 
 import com.google.gson.JsonObject;
+import fr.modcraftmc.crossservercore.api.annotation.AutoRegister;
+import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
+import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.inventory.PlayerDataSynchronizer;
 
+@AutoRegister("transfer_data")
 public class TransferData extends BaseMessage {
-    public static final String MESSAGE_NAME = "transfer_data";
 
-    public final String playerName;
-    public final String data;
+    @AutoSerialize
+    public ISyncPlayer player;
+    public String data;
 
-    public TransferData(String playerName, String data) {
-        super(MESSAGE_NAME);
-        this.playerName = playerName;
+    private TransferData() {}
+
+    public TransferData(ISyncPlayer player, String data) {
+        this.player = player;
         this.data = data;
     }
 
     @Override
-    protected JsonObject serialize() {
-        JsonObject jsonObject = super.serialize();
-        jsonObject.addProperty("playerName", playerName);
-        jsonObject.addProperty("data", data);
-        return jsonObject;
-    }
-
-    public static TransferData deserialize(JsonObject json) {
-        String playerName = json.get("playerName").getAsString();
-        String data = json.get("data").getAsString();
-        return new TransferData(playerName, data);
-    }
-
-    @Override
-    public String getMessageName() {
-        return MESSAGE_NAME;
-    }
-
-    @Override
     public void handle() {
-        PlayerDataSynchronizer.pushDataToTransferBuffer(playerName, data);
+        PlayerDataSynchronizer.pushDataToTransferBuffer(player, data);
     }
 }

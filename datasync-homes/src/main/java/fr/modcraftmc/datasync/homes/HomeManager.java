@@ -9,8 +9,8 @@ import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.crossservercore.api.events.PlayerJoinClusterEvent;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStore;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreNotReadyException;
-import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
 import fr.modcraftmc.datasync.homes.messages.ChangeGlobalHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.ChangePlayerHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
@@ -38,7 +38,7 @@ public class HomeManager {
     private final HashMap<ISyncPlayer, PendingHomeTp> pendingHomeTpList = new HashMap<>();
 
     private static final String homesCollectionName = "homes";
-    private ISharedDataStore homesCollection = SharedDataStoreProvider.get(homesCollectionName);
+    private ISharedDataStore homesCollection = new SharedDataStore(homesCollectionName);
 
     private static int pendingHomeTpTimeout = 120;
     private int maxHomes = 5;

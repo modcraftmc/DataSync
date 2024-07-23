@@ -23,7 +23,7 @@ import dev.ftb.mods.ftbteams.data.Team;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
-import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStore;
 import fr.modcraftmc.datasync.ftbquests.Serialization.SerializationUtil;
 import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
 import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
@@ -46,7 +46,7 @@ public class QuestsSynchronizer {
 
     public boolean FTBQuestsLoaded = false;
 
-    public ISharedDataStore databaseTeamsQuestsData = SharedDataStoreProvider.get(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
+    public ISharedDataStore databaseTeamsQuestsData = new SharedDataStore(References.TEAMS_QUESTS_DATA_COLLECTION_NAME);
 
     public QuestsSynchronizer() {
         if(!ModList.get().isLoaded(References.FTBQUESTS_MOD_ID))

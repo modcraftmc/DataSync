@@ -13,7 +13,7 @@ import fr.modcraftmc.crossservercore.api.events.PlayerJoinClusterEvent;
 import fr.modcraftmc.crossservercore.api.message.SendMessage;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
-import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStore;
 import fr.modcraftmc.datasync.ftbteams.message.SyncTeamMessage;
 import fr.modcraftmc.datasync.ftbteams.message.SyncTeams;
 import fr.modcraftmc.datasync.ftbteams.serialization.SerializationUtil;
@@ -40,7 +40,7 @@ import java.util.UUID;
 public class TeamsSynchronizer {
     
     public boolean FTBTeamsLoaded = false;
-    public ISharedDataStore databaseTeamsData = SharedDataStoreProvider.get(References.TEAMS_DATA_COLLECTION_NAME);
+    public ISharedDataStore databaseTeamsData = new SharedDataStore(References.TEAMS_DATA_COLLECTION_NAME);
 
     public TeamsSynchronizer() {
         if(!ModList.get().isLoaded(References.FTBTEAMS_MOD_ID))

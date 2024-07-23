@@ -10,8 +10,8 @@ import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServerProxy;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStore;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreNotReadyException;
-import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
 import fr.modcraftmc.datasync.waystones.message.PlayerWaystonesData;
 import fr.modcraftmc.datasync.waystones.message.UpdateWaystone;
 import fr.modcraftmc.datasync.waystones.message.WaystoneRecovery;
@@ -40,8 +40,8 @@ public class WaystoneManager {
     public final Map<UUID, Pair<ISyncServer, IWaystone>> waystoneServerMap = new ConcurrentHashMap<>();
     public static final int pendingWaystoneTpTimeout = 60; //time in second before tp request expire
     public static final int pendingWaystoneDataTimeout = 60; //time in second before tp request expire
-    public static ISharedDataStore databaseWaystonesData = SharedDataStoreProvider.get(References.WAYSTONES_DATA_COLLECTION_NAME);
-    public static ISharedDataStore databasePlayerWaystonesData = SharedDataStoreProvider.get(References.PLAYER_WAYSTONES_DATA_COLLECTION_NAME);
+    public static ISharedDataStore databaseWaystonesData = new SharedDataStore(References.WAYSTONES_DATA_COLLECTION_NAME);
+    public static ISharedDataStore databasePlayerWaystonesData = new SharedDataStore(References.PLAYER_WAYSTONES_DATA_COLLECTION_NAME);
 
     public WaystoneManager() {
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoined);

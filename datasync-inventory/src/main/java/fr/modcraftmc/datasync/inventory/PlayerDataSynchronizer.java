@@ -3,7 +3,7 @@ package fr.modcraftmc.datasync.inventory;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
-import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStoreProvider;
+import fr.modcraftmc.crossservercore.api.sharedpersistentdata.SharedDataStore;
 import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
@@ -22,7 +22,7 @@ import java.util.List;
 public class PlayerDataSynchronizer {
     private static List<TemporalPlayerData> playerData = new ArrayList<>();
     private static int keepTime = 30; // seconds to hold data
-    public static ISharedDataStore databasePlayerData = SharedDataStoreProvider.get(References.PLAYER_DATA_COLLECTION_NAME);
+    public static ISharedDataStore databasePlayerData = new SharedDataStore(References.PLAYER_DATA_COLLECTION_NAME);
     private static List<ServerPlayer> savablePlayers = new ArrayList<>();
 
     public static void checkSavablePlayers(){

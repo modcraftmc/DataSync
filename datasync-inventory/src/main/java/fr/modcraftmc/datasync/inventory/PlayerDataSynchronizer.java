@@ -1,5 +1,6 @@
 package fr.modcraftmc.datasync.inventory;
 
+import com.mongodb.client.model.ReplaceOptions;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
@@ -84,7 +85,7 @@ public class PlayerDataSynchronizer {
         Document document = new Document("name", player.getName().getString())
                 .append("saveDate", new Timestamp(date.getTime()).toString())
                 .append("data", playerData);
-        databasePlayerData.accessOrThrow().replaceOne(new Document("name", player.getName().getString()), document);
+        databasePlayerData.accessOrThrow().replaceOne(new Document("name", player.getName().getString()), document, new ReplaceOptions().upsert(true));
     }
 
     private static boolean loadDataFromTransferBuffer(ServerPlayer player, ISyncPlayer syncPlayer) {

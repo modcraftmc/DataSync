@@ -3,6 +3,7 @@ package fr.modcraftmc.datasync.homes;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mongodb.client.model.ReplaceOptions;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
@@ -171,7 +172,7 @@ public class HomeManager {
 
         Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(player).serialize().toString());
 
-        homesCollection.accessOrThrow().replaceOne(new Document("player", playerName), document);
+        homesCollection.accessOrThrow().replaceOne(new Document("player", playerName), document, new ReplaceOptions().upsert(true));
     }
 
     public HomesData getHomesDataFromDatabase(ISyncPlayer player) {
@@ -203,7 +204,7 @@ public class HomeManager {
     public void saveGlobalHomesLimitToDatabase() {
         Document document = new Document("global", "homesLimit").append("limit", maxHomes);
 
-        homesCollection.accessOrThrow().replaceOne(new Document("global", "homesLimit"), document);
+        homesCollection.accessOrThrow().replaceOne(new Document("global", "homesLimit"), document, new ReplaceOptions().upsert(true));
     }
 
     public void createHome(ISyncPlayer player, String homeName, int x, int y, int z, String dimension) {

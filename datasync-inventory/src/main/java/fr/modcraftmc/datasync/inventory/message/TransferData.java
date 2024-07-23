@@ -11,6 +11,7 @@ public class TransferData extends BaseMessage {
 
     @AutoSerialize
     public ISyncPlayer player;
+    @AutoSerialize
     public String data;
 
     private TransferData() {}

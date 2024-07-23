@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.mojang.datafixers.util.Pair;
 import com.mojang.serialization.JsonOps;
+import com.mongodb.client.model.ReplaceOptions;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
@@ -226,7 +227,7 @@ public class WaystoneManager {
         document.append("waystone", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, tag).result().get().toString());
         document.append("server", serverWaystonePair.getFirst());
 
-        databaseWaystonesData.accessOrThrow().replaceOne(new Document("uuid", waystoneUUID), document);
+        databaseWaystonesData.accessOrThrow().replaceOne(new Document("uuid", waystoneUUID), document, new ReplaceOptions().upsert(true));
     }
 
     private void removeWaystoneDataFromDatabase(IWaystone waystone) {
@@ -278,7 +279,7 @@ public class WaystoneManager {
         String waystonesData = String.join(",", waystoneUUIDs.stream().map(UUID::toString).toList());
         document.append("waystones", waystonesData);
 
-        databasePlayerWaystonesData.accessOrThrow().replaceOne(new Document("player", player.getName().getString()), document);
+        databasePlayerWaystonesData.accessOrThrow().replaceOne(new Document("player", player.getName().getString()), document, new ReplaceOptions().upsert(true));
     }
 
     private void loadPlayerWaystonesFromDatabase(Player player){

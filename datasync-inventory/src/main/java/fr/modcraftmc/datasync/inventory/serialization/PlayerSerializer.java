@@ -40,7 +40,7 @@ public class PlayerSerializer {
 
     private static final Map<Capability, CapabilitySerializer> CAPABILITY_SERIALIZERS = new Hashtable<>();
 
-    private static final List<Capability> CAPABILITIES_TO_SAVE_BY_DEFAULT = List.of(CapabilityBackpackWrapper.BACKPACK_WRAPPER_CAPABILITY);
+    private static final List<Capability> CAPABILITIES_TO_SAVE_BY_DEFAULT = new ArrayList<>();
 
     private static class CapabilitySerializer<T> {
         private final Capability<T> capability;
@@ -160,6 +160,8 @@ public class PlayerSerializer {
                     }
                 });
             });
+
+            CAPABILITIES_TO_SAVE_BY_DEFAULT.add(CapabilityBackpackWrapper.BACKPACK_WRAPPER_CAPABILITY);
         }
     }
 

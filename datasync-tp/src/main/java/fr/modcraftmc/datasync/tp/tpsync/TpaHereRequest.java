@@ -29,7 +29,7 @@ public class TpaHereRequest {
             return;
         }
 
-        player.sendSystemMessage(Component.literal("Sending tpa here request to " + playerTarget));
+        player.sendSystemMessage(Component.literal("Sending tpa here request to " + playerTarget.getName()));
         playerTarget.getServer().sendMessage(new TpaHereRequestMessage(this));
     }
 

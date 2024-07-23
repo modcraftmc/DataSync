@@ -171,7 +171,7 @@ public class HomeManager {
 
         Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(player).serialize().toString());
 
-        homesCollection.accessOrThrow().updateOne(new Document("player", playerName), document);
+        homesCollection.accessOrThrow().replaceOne(new Document("player", playerName), document);
     }
 
     public HomesData getHomesDataFromDatabase(ISyncPlayer player) {
@@ -203,7 +203,7 @@ public class HomeManager {
     public void saveGlobalHomesLimitToDatabase() {
         Document document = new Document("global", "homesLimit").append("limit", maxHomes);
 
-        homesCollection.accessOrThrow().updateOne(new Document("global", "homesLimit"), document);
+        homesCollection.accessOrThrow().replaceOne(new Document("global", "homesLimit"), document);
     }
 
     public void createHome(ISyncPlayer player, String homeName, int x, int y, int z, String dimension) {

@@ -226,7 +226,7 @@ public class WaystoneManager {
         document.append("waystone", CompoundTag.CODEC.encodeStart(JsonOps.INSTANCE, tag).result().get().toString());
         document.append("server", serverWaystonePair.getFirst());
 
-        databaseWaystonesData.accessOrThrow().updateOne(new Document("uuid", waystoneUUID), document);
+        databaseWaystonesData.accessOrThrow().replaceOne(new Document("uuid", waystoneUUID), document);
     }
 
     private void removeWaystoneDataFromDatabase(IWaystone waystone) {
@@ -278,7 +278,7 @@ public class WaystoneManager {
         String waystonesData = String.join(",", waystoneUUIDs.stream().map(UUID::toString).toList());
         document.append("waystones", waystonesData);
 
-        databasePlayerWaystonesData.accessOrThrow().updateOne(new Document("player", player.getName().getString()), document);
+        databasePlayerWaystonesData.accessOrThrow().replaceOne(new Document("player", player.getName().getString()), document);
     }
 
     private void loadPlayerWaystonesFromDatabase(Player player){

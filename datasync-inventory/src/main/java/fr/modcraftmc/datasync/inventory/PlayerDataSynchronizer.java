@@ -84,7 +84,7 @@ public class PlayerDataSynchronizer {
         Document document = new Document("name", player.getName().getString())
                 .append("saveDate", new Timestamp(date.getTime()).toString())
                 .append("data", playerData);
-        databasePlayerData.accessOrThrow().updateOne(new Document("name", player.getName().getString()), document);
+        databasePlayerData.accessOrThrow().replaceOne(new Document("name", player.getName().getString()), document);
     }
 
     private static boolean loadDataFromTransferBuffer(ServerPlayer player, ISyncPlayer syncPlayer) {

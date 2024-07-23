@@ -116,7 +116,7 @@ public class QuestsSynchronizer {
                 .append("name", team.getDisplayName())
                 .append("lastUpdated", new Timestamp(date.getTime()).toString())
                 .append("teamQuestsData", teamQuestsDataJson.toString());
-        databaseTeamsQuestsData.accessOrThrow().updateOne(new Document("uuid", uuid), document);
+        databaseTeamsQuestsData.accessOrThrow().replaceOne(new Document("uuid", uuid), document);
     }
 
     public void loadTeamsQuests(){

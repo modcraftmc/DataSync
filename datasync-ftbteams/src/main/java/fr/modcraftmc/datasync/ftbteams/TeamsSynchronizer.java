@@ -198,7 +198,7 @@ public class TeamsSynchronizer {
                 .append("name", team.getDisplayName())
                 .append("lastUpdated", new Timestamp(date.getTime()).toString())
                 .append("teamData", teamData.toString());
-        databaseTeamsData.accessOrThrow().updateOne(new Document("uuid", uuid), document);
+        databaseTeamsData.accessOrThrow().replaceOne(new Document("uuid", uuid), document);
     }
 
     public void removeTeamFromDB(Team team) {

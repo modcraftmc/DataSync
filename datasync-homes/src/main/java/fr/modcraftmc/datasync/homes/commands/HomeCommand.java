@@ -34,7 +34,8 @@ public class HomeCommand extends CommandModule {
 
         ROOT_COMMANDS.add(Commands.literal("homes")
                 .executes(context -> showPlayerHomes(context.getSource()))
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(NetworkPlayerArgument::listSuggestions)
                         .executes(context -> showPlayerHomes(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), true))
                         .requires(source -> source.hasPermission(4))
                         .then(Commands.argument("playerhome", StringArgumentType.word())
@@ -43,7 +44,8 @@ public class HomeCommand extends CommandModule {
 
 
         ROOT_COMMANDS.add(Commands.literal("listhomes")
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(NetworkPlayerArgument::listSuggestions)
                         .executes(context -> showPlayerHomes(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), false))));
 
         ROOT_COMMANDS.add(Commands.literal("sethome")

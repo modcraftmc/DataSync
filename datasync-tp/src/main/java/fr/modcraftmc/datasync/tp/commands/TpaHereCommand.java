@@ -1,5 +1,6 @@
 package fr.modcraftmc.datasync.tp.commands;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
@@ -13,7 +14,8 @@ public class TpaHereCommand extends CommandModule{
     @Override
     protected void buildCommand() {
         ROOT_COMMANDS.add(Commands.literal("tpahere")
-                .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
+                .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(NetworkPlayerArgument::listSuggestions)
                         .executes(context -> tpa(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
                 ));
         ROOT_COMMANDS.add(Commands.literal("tpahereaccept")

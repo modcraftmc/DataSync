@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.IntegerArgumentType;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
@@ -18,7 +19,8 @@ public class HomesLimitCommand extends CommandModule {
                 .executes(context -> showHomeLimit(context.getSource()))
                 .then(Commands.argument("limit", IntegerArgumentType.integer(0))
                         .executes(context -> setHomeLimit(context.getSource(), IntegerArgumentType.getInteger(context, "limit"))))
-                .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
+                .then(Commands.argument("player", StringArgumentType.word())
+                        .suggests(NetworkPlayerArgument::listSuggestions)
                         .executes(context -> showHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player")))
                         .then(Commands.argument("limit", IntegerArgumentType.integer(0))
                                 .executes(context -> setHomeLimit(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "player"), IntegerArgumentType.getInteger(context, "limit"))))

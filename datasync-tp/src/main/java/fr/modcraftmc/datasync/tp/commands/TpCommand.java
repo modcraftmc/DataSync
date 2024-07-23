@@ -1,5 +1,6 @@
 package fr.modcraftmc.datasync.tp.commands;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
@@ -12,10 +13,12 @@ public class TpCommand extends CommandModule {
     @Override
     protected void buildCommand() {
         COMMANDS.add(Commands.literal("tp")
-                .then(Commands.argument("target", NetworkPlayerArgument.networkPlayer())
-                        .then(Commands.argument("player", NetworkPlayerArgument.networkPlayer())
-                                .executes(context -> tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target"), NetworkPlayerArgument.getNetworkPlayer(context, "player"))))
+                .then(Commands.argument("target", StringArgumentType.word())
+                        .suggests(NetworkPlayerArgument::listSuggestions)
                         .executes(context -> tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target")))
+                        .then(Commands.argument("player", StringArgumentType.word())
+                                .suggests(NetworkPlayerArgument::listSuggestions)
+                                .executes(context -> tp(context.getSource(), NetworkPlayerArgument.getNetworkPlayer(context, "target"), NetworkPlayerArgument.getNetworkPlayer(context, "player"))))
                 ));
     }
 

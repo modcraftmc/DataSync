@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.homes.commands;
 
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import fr.modcraftmc.crossservercore.api.commands.NetworkPlayerSuggestionProvider;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
@@ -18,6 +19,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 public class HomeCommand extends CommandModule {
 
@@ -34,7 +36,7 @@ public class HomeCommand extends CommandModule {
                 .executes(context -> showPlayerHomes(context.getSource()))
                 .then(Commands.argument("player", StringArgumentType.word())
                         .suggests(new NetworkPlayerSuggestionProvider())
-                        .executes(context -> showPlayerHomes(context.getSource(), StringArgumentType.getString(context, "player"), true))
+                        .executes(context -> showPlayerHomes(context.getSource(), StringArgumentType.getString(context, "player"), this.isSamePlayer(context, StringArgumentType.getString(context, "player"))))
                         .requires(source -> source.hasPermission(4))
                         .then(Commands.argument("playerhome", StringArgumentType.word())
                                 .suggests((context, builder) -> SharedSuggestionProvider.suggest(DatasyncHomes.homeManager.getHomeNames(StringArgumentType.getString(context, "player")), builder))
@@ -143,4 +145,10 @@ public class HomeCommand extends CommandModule {
         return showPlayerHomes(source, source.getPlayerOrException().getName().getString(), true);
     }
 
+    private boolean isSamePlayer(CommandContext<CommandSourceStack> context, String player) {
+        if (!context.getSource().isPlayer())
+            return false;
+
+        return context.getSource().getPlayer().getName().getString().equalsIgnoreCase(player);
+    }
 }

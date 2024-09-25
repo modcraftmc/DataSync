@@ -9,6 +9,7 @@ import dev.ftb.mods.ftbteams.event.TeamEvent;
 import dev.ftb.mods.ftbteams.event.TeamManagerEvent;
 import dev.ftb.mods.ftbteams.net.SendMessageResponseMessage;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
+import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.crossservercore.api.events.PlayerJoinClusterEvent;
 import fr.modcraftmc.crossservercore.api.message.SendMessage;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
@@ -50,8 +51,13 @@ public class TeamsSynchronizer {
         FTBTeamsLoaded = true;
 
         TeamManagerEvent.CREATED.register((event) -> {
-            loadTeams();
-            CrossServerCoreAPI.getAllPlayersOnCluster().forEach(TeamsSynchronizer::setPlayerTeamOnline);
+            if(CrossServerCoreAPI.isLoaded()) {
+                loadTeams();
+                CrossServerCoreAPI.getAllPlayersOnCluster().forEach(TeamsSynchronizer::setPlayerTeamOnline);
+            }
+            else {
+                MinecraftForge.EVENT_BUS.addListener(this::loadTeamsWhenCSCReady); //if ftbteams is loaded before crossservercore, we need to wait for it to be ready
+            }
         });
         TeamEvent.PROPERTIES_CHANGED.register((event) -> syncTeam(event.getTeam()));
         TeamEvent.OWNERSHIP_TRANSFERRED.register((event) -> syncTeam(event.getTeam()));
@@ -65,6 +71,10 @@ public class TeamsSynchronizer {
         TeamEvent.DELETED.register((event) -> removeTeam(event.getTeam()));
 
         MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoinCluster);
+    }
+
+    private void loadTeamsWhenCSCReady(CrossServerCoreReadyEvent event){
+        loadTeams();
     }
 
     private void onPlayerJoinCluster(PlayerJoinClusterEvent event){

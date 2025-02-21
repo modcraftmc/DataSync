@@ -1,30 +1,21 @@
-buildscript {
-    repositories {
-        maven { url = 'https://repo.spongepowered.org/maven' }
-    }
-    dependencies {
-        classpath 'org.spongepowered:mixingradle:0.7.+'
-    }
-}
-
 plugins {
-    id 'eclipse'
+    id 'java'
+    id 'java-library'
     id 'maven-publish'
-    id 'net.minecraftforge.gradle' version '5.1.+' apply false
+    id 'net.neoforged.moddev' version '2.0.76'
 }
 
 subprojects {
-
-    apply plugin: 'net.minecraftforge.gradle'
-    apply plugin: 'org.spongepowered.mixin'
+    apply plugin: 'java'
+    apply plugin: 'net.neoforged.moddev'
 
     println "Setup: ${project.name}"
 
-    version = "${mc_version}-${mod_version}"
+    version = "${minecraft_version}-${mod_version}"
     group = 'fr.modcraftmc.datasync'
     archivesBaseName = "${project.name}"
 
-    java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+    java.toolchain.languageVersion = JavaLanguageVersion.of(21)
 
     configurations.configureEach {
         resolutionStrategy.cacheChangingModulesFor 0, 'seconds' // Avoid caching changing modules
@@ -34,26 +25,58 @@ subprojects {
         mavenLocal()
         maven { url = 'https://maven.modcraftmc.fr/releases' }
         maven { url = 'https://maven.modcraftmc.fr/snapshots' }
-        maven { url "https://cursemaven.com" }
+        maven {
+            name "CurseMaven"
+            url "https://cursemaven.com"
+        }
+        maven {
+            name = "Modrinth"
+            url = "https://api.modrinth.com/maven"
+        }
     }
 
     dependencies {
-        minecraft "net.minecraftforge:forge:${mc_version}-${forge_version}"
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
         implementation ('fr.modcraftmc:cross-server-core:2.0.0:api') {changing = true}
+        implementation('com.google.code.gson:gson:2.8.8')
     }
 
-    minecraft {
-        mappings channel: 'official', version: '1.19.2'
-        accessTransformer = file('src/main/resources/META-INF/accesstransformer.cfg')
-    }
+    neoForge {
+        version = project.neo_version
 
-    mixin {
-        add sourceSets.main, "${project.name}.refmap.json"
-        config "${project.name}.mixin.json"
+        parchment {
+            mappingsVersion = project.parchment_mappings_version
+            minecraftVersion = project.parchment_minecraft_version
+        }
+
+        accessTransformers = project.files('src/main/resources/META-INF/accesstransformer.cfg')
+
+        runs {
+            client {
+                client()
+            }
+
+            server {
+                server()
+            }
+        }
+
+        mods {
+            // define mod <-> source bindings
+            // these are used to tell the game which sources are for which mod
+            // mostly optional in a single mod project
+            // but multi mod projects should define one per mod
+            "${mod_id}" {
+                sourceSet(sourceSets.main)
+            }
+        }
     }
 
     sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+    configurations {
+        runtimeClasspath.extendsFrom localRuntime
+    }
 
     jar {
         manifest {

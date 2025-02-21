@@ -11,8 +11,8 @@ repositories{
 }
 
 dependencies{
-    implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[4.9.0]')
-    implementation(fg.deobf("dev.architectury:architectury-forge:${architectury_version}")){transitive = false}
-    implementation(fg.deobf("dev.ftb.mods:ftb-library-forge:${ftb_library_version}")){transitive = false}
-    implementation(fg.deobf("dev.ftb.mods:ftb-teams-forge:${ftb_teams_version}")){transitive = false}
+    implementation (group: 'org.mongodb', name: 'mongodb-driver-sync', version: '[5.3.0,)')
+    implementation("dev.architectury:architectury-neoforge:${architectury_version}"){transitive = false}
+    implementation("dev.ftb.mods:ftb-library-neoforge:${ftb_library_version}"){transitive = false}
+    implementation("dev.ftb.mods:ftb-teams-neoforge:${ftb_teams_version}"){transitive = false}
 }

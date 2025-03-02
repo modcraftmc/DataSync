@@ -7,6 +7,7 @@ import com.mongodb.client.model.ReplaceOptions;
 import dev.architectury.event.EventResult;
 import dev.ftb.mods.ftblibrary.snbt.SNBTCompoundTag;
 import dev.ftb.mods.ftbquests.FTBQuests;
+import dev.ftb.mods.ftbquests.api.FTBQuestsAPI;
 import dev.ftb.mods.ftbquests.events.CustomTaskEvent;
 import dev.ftb.mods.ftbquests.events.ObjectCompletedEvent;
 import dev.ftb.mods.ftbquests.net.SyncQuestsMessage;
@@ -19,8 +20,8 @@ import dev.ftb.mods.ftbquests.quest.reward.RewardType;
 import dev.ftb.mods.ftbquests.quest.task.CustomTask;
 import dev.ftb.mods.ftbquests.quest.task.Task;
 import dev.ftb.mods.ftbquests.quest.task.TaskType;
-import dev.ftb.mods.ftbteams.FTBTeamsAPI;
-import dev.ftb.mods.ftbteams.data.Team;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.Team;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.crossservercore.api.sharedpersistentdata.ISharedDataStore;
@@ -30,11 +31,14 @@ import fr.modcraftmc.datasync.ftbquests.message.SyncQuests;
 import fr.modcraftmc.datasync.ftbquests.message.SyncTeamQuests;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.Tag;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.ModList;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.bson.Document;
 
@@ -64,7 +68,7 @@ public class QuestsSynchronizer {
             return EventResult.pass();
         });
 
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+        NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
     }
 
     private void onCrossServerCoreReadyEvent(CrossServerCoreReadyEvent event) {
@@ -73,13 +77,13 @@ public class QuestsSynchronizer {
 
     public void syncTeamQuests(TeamData teamData) {
         if(!FTBQuestsLoaded) return;
-        DatasyncFtbQuests.LOGGER.debug(String.format("Syncing quests for team: %s", teamData.name));
+        DatasyncFtbQuests.LOGGER.debug(String.format("Syncing quests for team: %s", teamData.getName()));
         CompoundTag questsData = teamData.serializeNBT();
         JsonElement questsDataJson = SerializationUtil.ToJsonElement(questsData);
 
-        Team team = FTBTeamsAPI.getManager().getTeamByID(teamData.uuid);
+        Team team = FTBTeamsAPI.api().getManager().getTeamByID(teamData.getTeamId()).get();
         saveTeamQuestsToDB(team, questsDataJson);
-        SyncTeamQuests syncQuestsMessage = new SyncTeamQuests(teamData.uuid, questsDataJson);
+        SyncTeamQuests syncQuestsMessage = new SyncTeamQuests(teamData.getTeamId(), questsDataJson);
 
         CrossServerCoreAPI.sendCrossMessageToAllOtherServer(syncQuestsMessage);
     }
@@ -87,34 +91,35 @@ public class QuestsSynchronizer {
     public void handleTeamQuestsSync(SyncTeamQuests syncQuestsMessage){
         if(!FTBQuestsLoaded) return;
         CompoundTag questsData = SerializationUtil.GetNbt(syncQuestsMessage.questsData);
-        Team team = FTBTeamsAPI.getManager().getTeamByID(syncQuestsMessage.teamUUID);
-        TeamData teamData = FTBQuests.PROXY.getQuestFile(false).getData(team);
+        Team team = FTBTeamsAPI.api().getManager().getTeamByID(syncQuestsMessage.teamUUID).get();
+        TeamData teamData = FTBQuestsAPI.api().getQuestFile(false).getNullableTeamData(team.getId());
+        
 
         teamData.deserializeNBT(SNBTCompoundTag.of(questsData));
 
-        SyncTeamDataMessage syncMessageToPlayer = new SyncTeamDataMessage(teamData, true);
-        team.getOnlineMembers().forEach(player -> syncMessageToPlayer.sendTo(player));
+        SyncTeamDataMessage syncMessageToPlayer = new SyncTeamDataMessage(teamData);
+        PacketDistributor.sendToAllPlayers(syncMessageToPlayer);
     }
 
     public void saveTeamsQuestsToDB(){
         if(!FTBQuestsLoaded) return;
         DatasyncFtbQuests.LOGGER.debug("Saving teams");
-        FTBTeamsAPI.getManager().getTeams().forEach(team -> saveTeamQuestsToDB(team));
+        FTBTeamsAPI.api().getManager().getTeams().forEach(team -> saveTeamQuestsToDB(team));
     }
 
     public void saveTeamQuestsToDB(Team team){
-        TeamData teamQuestsData = FTBQuests.PROXY.getQuestFile(false).getData(team);
+        TeamData teamQuestsData = FTBQuestsAPI.api().getQuestFile(false).getNullableTeamData(team.getId());
         JsonObject teamQuestsDataJson = SerializationUtil.ToJsonElement(teamQuestsData.serializeNBT()).getAsJsonObject();
         saveTeamQuestsToDB(team, teamQuestsDataJson);
     }
 
     public void saveTeamQuestsToDB(Team team, JsonElement questsDataJson){
-        DatasyncFtbQuests.LOGGER.debug(String.format("Saving team: %s's quests", team.getDisplayName()));
+        DatasyncFtbQuests.LOGGER.debug(String.format("Saving team: %s's quests", team.getName().getString()));
         JsonObject teamQuestsDataJson = questsDataJson.getAsJsonObject();
         Date date = new Date();
         String uuid = team.getId().toString();
         Document document = new Document("uuid", uuid)
-                .append("name", team.getDisplayName())
+                .append("name", team.getName().getString())
                 .append("lastUpdated", new Timestamp(date.getTime()).toString())
                 .append("teamQuestsData", teamQuestsDataJson.toString());
         databaseTeamsQuestsData.accessOrThrow().replaceOne(new Document("uuid", uuid), document, new ReplaceOptions().upsert(true));
@@ -127,22 +132,22 @@ public class QuestsSynchronizer {
             JsonElement teamQuestsDataJson = gson.fromJson(data.getString("teamQuestsData"), JsonElement.class);
             CompoundTag teamQuestsData = SerializationUtil.GetNbt(teamQuestsDataJson);
 
-            Team team = FTBTeamsAPI.getManager().getTeamByID(UUID.fromString(data.getString("uuid")));
-            TeamData teamData = FTBQuests.PROXY.getQuestFile(false).getData(team);
+            Team team = FTBTeamsAPI.api().getManager().getTeamByID(UUID.fromString(data.getString("uuid"))).get();
+            TeamData teamData = FTBQuestsAPI.api().getQuestFile(false).getNullableTeamData(team.getId());
 
-            DatasyncFtbQuests.LOGGER.debug(String.format("Loading team: %s's quests", team.getDisplayName()));
+            DatasyncFtbQuests.LOGGER.debug(String.format("Loading team: %s's quests", team.getName().getString()));
 
             teamData.deserializeNBT(SNBTCompoundTag.of(teamQuestsData));
 
-            SyncTeamDataMessage syncMessageToPlayer = new SyncTeamDataMessage(teamData, true);
-            team.getOnlineMembers().forEach(player -> syncMessageToPlayer.sendTo(player));
+            SyncTeamDataMessage syncMessageToPlayer = new SyncTeamDataMessage(teamData);
+            PacketDistributor.sendToAllPlayers(syncMessageToPlayer);
         });
     }
 
     public void syncQuests() {
         if(!FTBQuestsLoaded) return;
         DatasyncFtbQuests.LOGGER.debug("Syncing server quests");
-        CompoundTag questsData = serializeQuests(FTBQuests.PROXY.getQuestFile(false));
+        CompoundTag questsData = serializeQuests(FTBQuestsAPI.api().getQuestFile(false));
         SyncQuests syncQuestsMessage = new SyncQuests(SerializationUtil.ToJsonElement(questsData));
 
         CrossServerCoreAPI.sendCrossMessageToAllOtherServer(syncQuestsMessage);
@@ -151,39 +156,42 @@ public class QuestsSynchronizer {
     public void handleSyncQuests(SyncQuests syncQuestsMessage){
         if(!FTBQuestsLoaded) return;
         CompoundTag questsData = SerializationUtil.GetNbt(syncQuestsMessage.questsData);
-        deserializeQuests(FTBQuests.PROXY.getQuestFile(false), SNBTCompoundTag.of(questsData));
+        deserializeQuests(FTBQuestsAPI.api().getQuestFile(false), SNBTCompoundTag.of(questsData));
 
         SyncQuestsMessage syncMessageToPlayer = new SyncQuestsMessage(ServerQuestFile.INSTANCE);
-        ServerQuestFile.INSTANCE.server.getPlayerList().getPlayers().forEach(player -> syncMessageToPlayer.sendTo(player));
+        PacketDistributor.sendToAllPlayers(syncMessageToPlayer);
     }
 
     // Code from QuestFile class adapted to write in SNBT instead of a file
-    public static SNBTCompoundTag serializeQuests(QuestFile questFile){
+    public static SNBTCompoundTag serializeQuests(BaseQuestFile questFile){
         SNBTCompoundTag questsNBT = new SNBTCompoundTag();
-        questsNBT.putInt("version", questFile.VERSION);
-        questFile.writeData(questsNBT);
+        HolderLookup.Provider lookup = (HolderLookup.Provider) ServerLifecycleHooks.getCurrentServer().registryAccess().asGetterLookup();
+
+        questsNBT.putInt("version", BaseQuestFile.VERSION);
+        questFile.writeData(questsNBT, lookup);
+
 
         ListTag chapterList = new ListTag();
-        for (ChapterGroup group : questFile.chapterGroups) {
-            for (int ci = 0; ci < group.chapters.size(); ci++) {
-                Chapter chapter = group.chapters.get(ci);
+        for (ChapterGroup group : questFile.getChapterGroups()) {
+            for (int ci = 0; ci < group.getChapters().size(); ci++) {
+                Chapter chapter = group.getChapters().get(ci);
                 SNBTCompoundTag chapterNBT = new SNBTCompoundTag();
                 chapterNBT.putString("id", chapter.getCodeString());
                 chapterNBT.putString("group", group.isDefaultGroup() ? "" : group.getCodeString());
                 chapterNBT.putInt("order_index", ci);
-                chapter.writeData(chapterNBT);
+                chapter.writeData(chapterNBT, lookup);
 
                 ListTag questList = new ListTag();
                 for (Quest quest : chapter.getQuests()) {
-                    if (!quest.invalid) {
+                    if (!quest.isValid()) {
                         SNBTCompoundTag questNBT = new SNBTCompoundTag();
-                        quest.writeData(questNBT);
+                        quest.writeData(questNBT, lookup);
                         questNBT.putString("id", quest.getCodeString());
-                        if (!quest.tasks.isEmpty()) {
-                            quest.writeTasks(questNBT);
+                        if (!quest.getTasks().isEmpty()) {
+                            quest.writeTasks(questNBT, lookup);
                         }
-                        if (!quest.rewards.isEmpty()) {
-                            quest.writeRewards(questNBT);
+                        if (!quest.getRewards().isEmpty()) {
+                            quest.writeRewards(questNBT, lookup);
                         }
                         questList.add(questNBT);
                     }
@@ -194,7 +202,7 @@ public class QuestsSynchronizer {
                 for (QuestLink link : chapter.getQuestLinks()) {
                     if (link.getQuest().isPresent()) {
                         SNBTCompoundTag linkNBT = new SNBTCompoundTag();
-                        link.writeData(linkNBT);
+                        link.writeData(linkNBT, lookup);
                         linkNBT.putString("id", link.getCodeString());
                         linkList.add(linkNBT);
                     }
@@ -208,24 +216,24 @@ public class QuestsSynchronizer {
         questsNBT.put("chapters", chapterList);
 
         ListTag rewardTableList = new ListTag();
-        for (int ri = 0; ri < questFile.rewardTables.size(); ri++) {
-            RewardTable table = questFile.rewardTables.get(ri);
+        for (int ri = 0; ri < questFile.getRewardTables().size(); ri++) {
+            RewardTable table = questFile.getRewardTables().get(ri);
             SNBTCompoundTag tableNBT = new SNBTCompoundTag();
             tableNBT.putString("id", table.getCodeString());
             tableNBT.putInt("order_index", ri);
-            table.writeData(tableNBT);
+            table.writeData(tableNBT, lookup);
             tableNBT.putString("filename", table.getFilename());
             rewardTableList.add(tableNBT);
         }
         questsNBT.put("reward_tables", rewardTableList);
 
         ListTag chapterGroupTag = new ListTag();
-        for (ChapterGroup group : questFile.chapterGroups) {
+        for (ChapterGroup group : questFile.getChapterGroups()) {
             if (!group.isDefaultGroup()) {
                 SNBTCompoundTag groupTag = new SNBTCompoundTag();
                 groupTag.singleLine();
                 groupTag.putString("id", group.getCodeString());
-                group.writeData(groupTag);
+                group.writeData(groupTag, lookup);
                 chapterGroupTag.add(groupTag);
             }
         }
@@ -238,12 +246,14 @@ public class QuestsSynchronizer {
     }
 
     // Code from QuestFile class adapted to read from SNBT instead of a file
-    public static void deserializeQuests(QuestFile questFile, SNBTCompoundTag questsNBT){
+    public static void deserializeQuests(BaseQuestFile questFile, SNBTCompoundTag questsNBT){
+        HolderLookup.Provider lookup = (HolderLookup.Provider) ServerLifecycleHooks.getCurrentServer().registryAccess().asGetterLookup();
+
         questFile.clearCachedData();
-        questFile.defaultChapterGroup.chapters.clear();
-        questFile.chapterGroups.clear();
-        questFile.chapterGroups.add(questFile.defaultChapterGroup);
-        questFile.rewardTables.clear();
+        questFile.getDefaultChapterGroup().getChapters().clear();
+        questFile.getChapterGroups().clear();
+        questFile.getChapterGroups().add(questFile.getDefaultChapterGroup());
+        questFile.getRewardTables().clear();
 
         MutableInt chapterCounter = new MutableInt();
         MutableInt questCounter = new MutableInt();
@@ -254,9 +264,9 @@ public class QuestsSynchronizer {
         CompoundTag fileNBT = questsNBT;
 
         if (fileNBT != null) {
-            questFile.fileVersion = fileNBT.getInt("version");
+            BaseQuestFile.VERSION = fileNBT.getInt("version");
             objectMap.put(1, questFile);
-            questFile.readData(fileNBT);
+            questFile.readData(fileNBT, lookup);
         }
         CompoundTag chapterGroupsTag = fileNBT.getCompound("chapter_groups");
 
@@ -265,11 +275,10 @@ public class QuestsSynchronizer {
 
             for (int i = 0; i < groupListTag.size(); i++) {
                 CompoundTag groupNBT = groupListTag.getCompound(i);
-                ChapterGroup chapterGroup = new ChapterGroup(questFile);
-                chapterGroup.id = questFile.readID(groupNBT.get("id"));
+                ChapterGroup chapterGroup = new ChapterGroup(groupNBT.getLong("id"), questFile);
                 objectMap.put(chapterGroup.id, chapterGroup);
                 dataCache.put(chapterGroup.id, groupNBT);
-                questFile.chapterGroups.add(chapterGroup);
+                questFile.getChapterGroups().add(chapterGroup);
             }
         }
 
@@ -281,20 +290,19 @@ public class QuestsSynchronizer {
             CompoundTag chapterNBT = chapterListTag.getCompound(i);
 
             if (chapterNBT != null) {
-                Chapter chapter = new Chapter(questFile, questFile.getChapterGroup(questFile.getID(chapterNBT.get("group"))));
-                chapter.id = questFile.readID(chapterNBT.get("id"));
-                chapter.filename = chapterNBT.getString("filename");
+                long chapterID = chapterNBT.getLong("id");
+                String chapterFilename = chapterNBT.getString("filename");
+                Chapter chapter = new Chapter(chapterID, questFile, questFile.getChapterGroup(questFile.getID(chapterNBT.get("group"))), chapterFilename);
                 objectOrderMap.put(chapter.id, chapterNBT.getInt("order_index"));
                 objectMap.put(chapter.id, chapter);
                 dataCache.put(chapter.id, chapterNBT);
-                chapter.group.chapters.add(chapter);
+                chapter.getGroup().getChapters().add(chapter);
 
                 ListTag questList = chapterNBT.getList("quests", Tag.TAG_COMPOUND);
 
                 for (int x = 0; x < questList.size(); x++) {
                     CompoundTag questNBT = questList.getCompound(x);
-                    Quest quest = new Quest(chapter);
-                    quest.id = questFile.readID(questNBT.get("id"));
+                    Quest quest = new Quest(questNBT.getLong("id"), chapter);
                     objectMap.put(quest.id, quest);
                     dataCache.put(quest.id, questNBT);
                     chapter.getQuests().add(quest);
@@ -303,34 +311,33 @@ public class QuestsSynchronizer {
 
                     for (int j = 0; j < taskList.size(); j++) {
                         CompoundTag taskNBT = taskList.getCompound(j);
-                        Task task = TaskType.createTask(quest, taskNBT.getString("type"));
+                        long taskId = taskNBT.getLong("id");
+                        Task task = TaskType.createTask(taskId, quest, taskNBT.getString("type"));
 
                         if (task == null) {
-                            task = new CustomTask(quest);
-                            task.title = "Unknown type: " + taskNBT.getString("type");
+                            task = new CustomTask(taskId, quest);
+                            task.setRawTitle("Unknown type: " + taskNBT.getString("type"));
                         }
-
-                        task.id = questFile.readID(taskNBT.get("id"));
                         objectMap.put(task.id, task);
                         dataCache.put(task.id, taskNBT);
-                        quest.tasks.add(task);
+                        quest.getTasks().add(task);
                     }
 
                     ListTag rewardList = questNBT.getList("rewards", Tag.TAG_COMPOUND);
 
                     for (int j = 0; j < rewardList.size(); j++) {
                         CompoundTag rewardNBT = rewardList.getCompound(j);
-                        Reward reward = RewardType.createReward(quest, rewardNBT.getString("type"));
+                        long rewardID = rewardNBT.getLong("id");
+                        Reward reward = RewardType.createReward(rewardID, quest, rewardNBT.getString("type"));
 
                         if (reward == null) {
-                            reward = new CustomReward(quest);
-                            reward.title = "Unknown type: " + rewardNBT.getString("type");
+                            reward = new CustomReward(rewardID, quest);
+                            reward.setRawTitle("Unknown type: " + rewardNBT.getString("type"));
                         }
 
-                        reward.id = questFile.readID(rewardNBT.get("id"));
                         objectMap.put(reward.id, reward);
                         dataCache.put(reward.id, rewardNBT);
-                        quest.rewards.add(reward);
+                        quest.getRewards().add(reward);
                     }
 
                     questCounter.increment();
@@ -339,8 +346,7 @@ public class QuestsSynchronizer {
                 ListTag questLinks = chapterNBT.getList("quest_links", Tag.TAG_COMPOUND);
                 for (int x = 0; x < questLinks.size(); x++) {
                     CompoundTag linkNBT = questLinks.getCompound(x);
-                    QuestLink link = new QuestLink(chapter, questFile.readID(linkNBT.get("linked_quest")));
-                    link.id = questFile.readID(linkNBT.get("id"));
+                    QuestLink link = new QuestLink(linkNBT.getLong("id"), chapter, questFile.readID(linkNBT.get("linked_quest")));
                     chapter.getQuestLinks().add(link);
                     objectMap.put(link.id, link);
                     dataCache.put(link.id, linkNBT);
@@ -355,13 +361,11 @@ public class QuestsSynchronizer {
             CompoundTag tableNBT = rewardTableListTag.getCompound(i);
 
             if (tableNBT != null) {
-                RewardTable table = new RewardTable(questFile);
-                table.id = questFile.readID(tableNBT.get("id"));
-                table.filename = tableNBT.getString("filename");
+                RewardTable table = new RewardTable(tableNBT.getLong("id"), questFile, tableNBT.getString("filename"));
                 objectOrderMap.put(table.id, tableNBT.getInt("order_index"));
                 objectMap.put(table.id, table);
                 dataCache.put(table.id, tableNBT);
-                questFile.rewardTables.add(table);
+                questFile.getRewardTables().add(table);
             }
         }
 
@@ -370,21 +374,21 @@ public class QuestsSynchronizer {
             CompoundTag data = dataCache.get(object.id);
 
             if (data != null) {
-                object.readData(data);
+                object.readData(data, lookup);
             }
         }
 
-        for (ChapterGroup group : questFile.chapterGroups) {
-            group.chapters.sort(Comparator.comparingInt(c -> objectOrderMap.get(c.id)));
+        for (ChapterGroup group : questFile.getChapterGroups()) {
+            group.getChapters().sort(Comparator.comparingInt(c -> objectOrderMap.get(c.id)));
 
-            for (Chapter chapter : group.chapters) {
+            for (Chapter chapter : group.getChapters()) {
                 for (Quest quest : chapter.getQuests()) {
                     quest.removeInvalidDependencies();
                 }
             }
         }
 
-        questFile.rewardTables.sort(Comparator.comparingInt(c -> objectOrderMap.get(c.id)));
+        questFile.getRewardTables().sort(Comparator.comparingInt(c -> objectOrderMap.get(c.id)));
         questFile.updateLootCrates();
 
         for (QuestObjectBase object : questFile.getAllObjects()) {
@@ -395,10 +399,11 @@ public class QuestsSynchronizer {
 
         questFile.refreshIDMap();
 
-        if (questFile.fileVersion != QuestFile.VERSION) {
-            questFile.save();
-        }
+        //fileVersion isn't accessible so we mark it dirty every time
+//        if (questFile.fileVersion != BaseQuestFile.VERSION) {
+            questFile.markDirty();
+//        }
 
-        FTBQuests.LOGGER.info("Loaded " + questFile.chapterGroups.size() + " chapter groups, " + chapterCounter + " chapters, " + questCounter + " quests, " + questFile.rewardTables.size() + " reward tables");
+        FTBQuests.LOGGER.info("Loaded " + questFile.getChapterGroups().size() + " chapter groups, " + chapterCounter + " chapters, " + questCounter + " quests, " + questFile.getRewardTables().size() + " reward tables");
     }
 }

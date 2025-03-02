@@ -6,6 +6,7 @@ import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.arguments.NetworkPlayerArgument;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncPlayer;
 import fr.modcraftmc.datasync.homes.DatasyncHomes;
+import fr.modcraftmc.datasync.homes.HomeManager;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
@@ -13,6 +14,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -79,9 +81,9 @@ public class HomeCommand extends CommandModule {
         }
 
         BlockPos pos = player.blockPosition();
-        ServerLevel dimension = player.getLevel();
-        DatasyncHomes.homeManager.createHome(syncPlayer, name, pos.getX(), pos.getY(), pos.getZ(), SerializationUtil.ToJsonElement(dimension.dimension(), Registry.DIMENSION_REGISTRY).toString());
-        source.sendSuccess(Component.literal("Home " + name + " created !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
+        ServerLevel dimension = (ServerLevel) player.level();
+        DatasyncHomes.homeManager.createHome(syncPlayer, name, pos.getX(), pos.getY(), pos.getZ(), SerializationUtil.ToJsonElement(dimension.dimension(), Registries.DIMENSION).toString());
+        source.sendSuccess(() -> Component.literal("Home " + name + " created !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
         return 1;
     }
 
@@ -92,43 +94,49 @@ public class HomeCommand extends CommandModule {
             return 0;
         }
         DatasyncHomes.homeManager.deleteHome(player, homeName);
-        source.sendSuccess(Component.literal("Home " + homeName + " deleted !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
+        source.sendSuccess(() -> Component.literal("Home " + homeName + " deleted !").withStyle(style -> style.withColor(ChatFormatting.GOLD)), false);
         return 1;
     }
 
     private int selfHomeTeleport(CommandSourceStack source, String target) throws CommandSyntaxException {
         ISyncPlayer player = getSyncPlayerFromCommand(source);
-        if(!DatasyncHomes.homeManager.homeExists(player, target)){
-            source.sendFailure(Component.literal("Home " + target + " doesn't exist !").withStyle(style -> style.withColor(ChatFormatting.RED)));
+        try {
+            DatasyncHomes.homeManager.tryTeleportPlayerToHome(player, player, target);
+        } catch (Exception e) {
+            source.sendFailure(Component.literal(e.getMessage()));
             return 0;
         }
-        DatasyncHomes.homeManager.tryTeleportPlayerToHome(player, player, target);
         return 1;
     }
 
     private int homeTeleport(CommandSourceStack source, ISyncPlayer playerTarget, String homeTarget) throws CommandSyntaxException {
         ISyncPlayer player = getSyncPlayerFromCommand(source);
-        DatasyncHomes.homeManager.tryTeleportPlayerToHome(player, playerTarget, homeTarget);
+        try {
+            DatasyncHomes.homeManager.tryTeleportPlayerToHome(player, playerTarget, homeTarget);
+        } catch (Exception e) {
+            source.sendFailure(Component.literal(e.getMessage()));
+            return 0;
+        }
         return 1;
     }
 
     private int showPlayerHomes(CommandSourceStack source, ISyncPlayer player, boolean selfPlayerHomes) throws CommandSyntaxException {
-        List<String> homeNames = DatasyncHomes.homeManager.getHomeNames(player);
+        List<HomeManager.Home> homes = DatasyncHomes.homeManager.getHomes(player);
         MutableComponent message = Component.literal(player.getName() + "'s homes :").withStyle(style -> style.withColor(ChatFormatting.GOLD));
-        for (String homeName : homeNames) {
+        for (HomeManager.Home home : homes) {
             message.append("\n");
 
             if(selfPlayerHomes)
-                message.append(Component.literal(String.format("[%s] %s", homeName, ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] %s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
             else
-                message.append(Component.literal(String.format("[%s] M%s", homeName, ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + player + " " + homeName))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] M%s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + player + " " + home))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
 
-            if (DatasyncHomes.homeManager.isLocalHome(player,  homeName)) {
+            if (DatasyncHomes.homeManager.isLocalHome(player, home)) {
                 message.append("(local)");
             }
         }
 
-        source.sendSuccess(message, false);
+        source.sendSuccess(() -> message, false);
         return 1;
     }
 

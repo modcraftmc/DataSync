@@ -31,30 +31,30 @@ public class HomesLimitCommand extends CommandModule {
 
     private int setHomeLimit(CommandSourceStack source, ISyncPlayer player, int limit) {
         DatasyncHomes.homeManager.setPlayerHomesLimit(player, limit);
-        source.sendSuccess(Component.literal("The new homes limit for " + player + " is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        source.sendSuccess(() -> Component.literal("The new homes limit for " + player + " is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 
     private int unsetHomeLimit(CommandSourceStack source, ISyncPlayer player) {
         DatasyncHomes.homeManager.unsetPlayerHomesLimit(player);
-        source.sendSuccess(Component.literal("The homes limit for " + player + " has been unset").withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        source.sendSuccess(() -> Component.literal("The homes limit for " + player + " has been unset").withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 
     private int setHomeLimit(CommandSourceStack source, int limit) {
         DatasyncHomes.homeManager.setGlobalHomesLimit(limit);
         DatasyncHomes.homeManager.propagateGlobalHomesLimit();
-        source.sendSuccess(Component.literal("The new global homes limit is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        source.sendSuccess(() -> Component.literal("The new global homes limit is : " + limit).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 
     private int showHomeLimit(CommandSourceStack source){
-        source.sendSuccess(Component.literal("The global homes limit is : " + DatasyncHomes.homeManager.getGlobalHomesLimit()).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        source.sendSuccess(() -> Component.literal("The global homes limit is : " + DatasyncHomes.homeManager.getGlobalHomesLimit()).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 
     private int showHomeLimit(CommandSourceStack source, ISyncPlayer player){
-        source.sendSuccess(Component.literal("The homes limit for " + player + " is : " + DatasyncHomes.homeManager.getPlayerHomesLimit(player)).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
+        source.sendSuccess(() -> Component.literal("The homes limit for " + player + " is : " + DatasyncHomes.homeManager.getPlayerHomesLimit(player)).withStyle(style -> style.withColor(ChatFormatting.GOLD)), true);
         return 1;
     }
 

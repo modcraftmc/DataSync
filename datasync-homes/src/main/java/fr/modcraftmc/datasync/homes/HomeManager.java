@@ -3,6 +3,8 @@ package fr.modcraftmc.datasync.homes;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.exceptions.SimpleCommandExceptionType;
 import com.mongodb.client.model.ReplaceOptions;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreProxyExtensionAPI;
@@ -17,21 +19,22 @@ import fr.modcraftmc.datasync.homes.messages.ChangePlayerHomesLimit;
 import fr.modcraftmc.datasync.homes.messages.HomeTpRequest;
 import fr.modcraftmc.datasync.homes.messages.SetHome;
 import fr.modcraftmc.datasync.homes.serialization.SerializationUtil;
-import net.minecraft.commands.CommandRuntimeException;
 import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.bson.Document;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class HomeManager {
 
@@ -45,9 +48,9 @@ public class HomeManager {
     private int maxHomes = 5;
 
     public HomeManager() {
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReady);
-        MinecraftForge.EVENT_BUS.addListener(this::onPlayerJoinCluster);
-        MinecraftForge.EVENT_BUS.addListener(this::onPlayerLeaveCluster);
+        NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReady);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerJoinCluster);
+        NeoForge.EVENT_BUS.addListener(this::onPlayerLeaveCluster);
     }
 
     private void onCrossServerCoreReady(CrossServerCoreReadyEvent event){
@@ -62,20 +65,20 @@ public class HomeManager {
         unloadPlayerHomesData(event.getPlayer());
     }
 
-    public List<String> getHomeNames(ISyncPlayer player) {
-        List<String> homesNames = new ArrayList<>();
+    public List<Home> getHomes(ISyncPlayer player) {
         HomesData playerHomesData = playerHomesDataMap.get(player);
         if(playerHomesData == null)
-            return homesNames;
+            return List.of();
 
-        for (Home home : playerHomesData.homes()) {
-            homesNames.add(home.name());
-        }
-        return homesNames;
+        return playerHomesData.homes();
     }
 
-    public Home getHomeByName(ISyncPlayer player, String name) {
-        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst().get(); //heh
+    public List<String> getHomeNames(ISyncPlayer player){
+        return getHomes(player).stream().map(Home::name).collect(Collectors.toList());
+    }
+
+    public Optional<Home> getHomeByName(ISyncPlayer player, String name) {
+        return playerHomesDataMap.get(player).homes().stream().filter((home) -> home.name.equals(name)).findFirst();
     }
 
     public int getPlayerHomesLimit(ISyncPlayer player) {
@@ -94,20 +97,14 @@ public class HomeManager {
         return getRemainingHomes(player) > 0;
     }
 
-    public void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, ISyncPlayer playerHomeOwner, String targetHome) {
-        Home target = null;
-        for (Home home : playerHomesDataMap.get(playerHomeOwner).homes()) {
-            if (home.name().equals(targetHome)) {
-                target = home;
-                break;
-            }
+    public void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, ISyncPlayer playerHomeOwner, String targetHome) throws Exception {
+        Optional<Home> target = getHomeByName(playerHomeOwner, targetHome);
+
+        if (target.isEmpty()) {
+            throw new Exception("Home " + targetHome + " not found for player " + playerHomeOwner);
         }
 
-        if (target == null) {
-            throw new CommandRuntimeException(Component.literal("Home " + targetHome + " not found for player " + playerHomeOwner));
-        }
-
-        tryTeleportPlayerToHome(playerToTeleport, target);
+        tryTeleportPlayerToHome(playerToTeleport, target.get());
     }
 
     private void tryTeleportPlayerToHome(ISyncPlayer playerToTeleport, Home target) {
@@ -122,7 +119,7 @@ public class HomeManager {
             MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
             ServerPlayer serverPlayer = server.getPlayerList().getPlayer(playerToTeleport.getUUID());
             if (serverPlayer != null) {
-                ServerLevel serverLevel = server.getLevel(SerializationUtil.GetResourceKey(SerializationUtil.StringToJsonElement(target.dimension), Registry.DIMENSION_REGISTRY));
+                ServerLevel serverLevel = server.getLevel(SerializationUtil.GetResourceKey(SerializationUtil.StringToJsonElement(target.dimension), Registries.DIMENSION));
                 if (serverLevel != null) {
                     server.execute(() -> serverPlayer.teleportTo(serverLevel, target.x, target.y, target.z, serverPlayer.getYRot(), serverPlayer.getXRot()));
                 }
@@ -302,8 +299,8 @@ public class HomeManager {
         }
     }
 
-    public boolean isLocalHome(ISyncPlayer player, String homeName) {
-        return getHomeByName(player, homeName).server().equals(CrossServerCoreAPI.getServerName());
+    public boolean isLocalHome(ISyncPlayer player, Home home) {
+        return home.server().equals(CrossServerCoreAPI.getServerName());
     }
 
     public static class HomesData {

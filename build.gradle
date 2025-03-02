@@ -37,7 +37,7 @@ subprojects {
 
     dependencies {
         annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
-        implementation ('fr.modcraftmc:cross-server-core:2.0.0:api') {changing = true}
+        implementation ('fr.modcraftmc:cross-server-core:1.21.1-2.0.0:api') {changing = true}
         implementation('com.google.code.gson:gson:2.8.8')
     }
 

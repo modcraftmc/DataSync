@@ -15,7 +15,7 @@ public class ResourceLocationSerializer extends FieldSerializer<ResourceLocation
 
     @Override
     public ResourceLocation deserialize(JsonElement json, Type typeOfT) {
-        return new ResourceLocation(json.getAsString());
+        return ResourceLocation.parse(json.getAsString());
     }
 
     @Override

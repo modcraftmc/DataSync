@@ -1,33 +1,30 @@
 package fr.modcraftmc.datasync.lightning.message.autoserializer;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonPrimitive;
 import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.message.autoserializer.FieldSerializer;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import net.minecraft.nbt.CompoundTag;
-import net.minecraft.network.FriendlyByteBuf;
-import net.minecraftforge.registries.ForgeRegistry;
+import net.neoforged.neoforge.registries.RegistrySnapshot;
 
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 
-public class RegistrySnapshotSerializer extends FieldSerializer<ForgeRegistry.Snapshot> {
+public class RegistrySnapshotSerializer extends FieldSerializer<RegistrySnapshot> {
     @Override
-    public JsonElement serialize(ForgeRegistry.Snapshot value) {
-        CompoundTag tag = value.write();
+    public JsonElement serialize(RegistrySnapshot value) {
+//        CompoundTag tag = value.write();
+        CompoundTag tag = new CompoundTag();
         return CrossServerCoreAPI.getMessageAutoPropertySerializer().serializeObject(tag);
     }
 
     @Override
-    public ForgeRegistry.Snapshot deserialize(JsonElement json, Type typeOfT) {
+    public RegistrySnapshot deserialize(JsonElement json, Type typeOfT) {
         CompoundTag tag = CrossServerCoreAPI.getMessageAutoPropertySerializer().deserializeObject(json, CompoundTag.class);
-        return ForgeRegistry.Snapshot.read(tag);
+//        return RegistrySnapshot.read(tag);
+        return null;
     }
 
     @Override
     public Type getType() {
-        return ForgeRegistry.Snapshot.class;
+        return RegistrySnapshot.class;
     }
 }

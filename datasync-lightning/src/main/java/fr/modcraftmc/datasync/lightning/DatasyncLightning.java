@@ -5,8 +5,8 @@ import fr.modcraftmc.crossservercore.api.CrossServerCoreAPI;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
 import fr.modcraftmc.datasync.lightning.message.autoserializer.RegistrySnapshotSerializer;
 import fr.modcraftmc.datasync.lightning.message.autoserializer.ResourceLocationSerializer;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 @Mod(DatasyncLightning.MOD_ID)
@@ -18,7 +18,7 @@ public class DatasyncLightning {
     public DatasyncLightning() {
         LOGGER.info("DatasyncLightning loading...");
 
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+        NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
 
         LOGGER.info("DatasyncLightning loaded !");
     }

@@ -6,9 +6,9 @@ import fr.modcraftmc.crossservercore.api.events.SyncServerAttachEvent;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;
 import fr.modcraftmc.datasync.lightning.message.RequestRegistriesSyncing;
 import fr.modcraftmc.datasync.lightning.message.RegistriesSyncing;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.registries.RegistryManager;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.registries.RegistryManager;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,8 +21,8 @@ public class RegistriesSyncer {
 
     public RegistriesSyncer(){
         registriesSynced = false;
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
-        MinecraftForge.EVENT_BUS.addListener(this::onSyncServerAttached);
+        NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+        NeoForge.EVENT_BUS.addListener(this::onSyncServerAttached);
     }
 
     public boolean areRegistriesSynced(){
@@ -69,6 +69,6 @@ public class RegistriesSyncer {
     }
 
     public void sendRegistries(ISyncServer syncServer){
-        syncServer.sendMessage(new RegistriesSyncing(RegistryManager.ACTIVE.takeSnapshot(false)));
+        syncServer.sendMessage(new RegistriesSyncing(RegistryManager.takeSnapshot(RegistryManager.SnapshotType.FULL)));
     }
 }

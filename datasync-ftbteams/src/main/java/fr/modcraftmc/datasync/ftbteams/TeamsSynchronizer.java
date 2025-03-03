@@ -3,7 +3,6 @@ package fr.modcraftmc.datasync.ftbteams;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.mojang.authlib.GameProfile;
 import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
 import dev.ftb.mods.ftbteams.api.Team;
 import dev.ftb.mods.ftbteams.api.event.TeamEvent;
@@ -22,8 +21,6 @@ import fr.modcraftmc.datasync.ftbteams.message.SyncTeams;
 import fr.modcraftmc.datasync.ftbteams.serialization.SerializationUtil;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.core.RegistryAccess;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
@@ -32,7 +29,6 @@ import net.minecraft.network.chat.Style;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.NeoForge;
-import net.neoforged.neoforge.common.util.FakePlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.bson.Document;
@@ -44,6 +40,8 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.util.Date;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class TeamsSynchronizer {
@@ -210,7 +208,7 @@ public class TeamsSynchronizer {
     public void saveTeamsToDB(){
         if(!FTBTeamsLoaded) return;
         DatasyncFtbTeam.LOGGER.debug("Saving teams");
-        FTBTeamsAPI.api().getManager().getTeams().forEach(team -> saveTeamToDB(team));
+        FTBTeamsAPI.api().getManager().getTeams().forEach(team -> saveTeamToDB((AbstractTeam) team));
     }
 
     public void saveTeamToDB(AbstractTeam team){
@@ -263,37 +261,52 @@ public class TeamsSynchronizer {
             }
             case PLAYER -> {
                 team = new PlayerTeam(TeamManagerImpl.INSTANCE, teamId);
+                addKnownPlayerTeam((PlayerTeam) team);
             }
             default -> {
                 return null;
             }
         }
-        FTBTeamsAPI.api().getManager().getTeams().put(teamId, team);
+        TeamManagerImpl.INSTANCE.getTeamMap().put(teamId, team);
+        TeamManagerImpl.INSTANCE.markDirty();
         return team;
     }
 
+    public static void addKnownPlayerTeam(PlayerTeam playerTeam){
+        //use reflection to replace knownPlayers with a new map containing the new playerTeam
+        if(TeamManagerImpl.INSTANCE.getKnownPlayerTeams().containsKey(playerTeam.getId())) return;
+
+        try {
+            Field knownPlayersField = TeamManagerImpl.class.getDeclaredField("knownPlayers");
+            knownPlayersField.setAccessible(true);
+            Map<UUID, PlayerTeam> newKnownPlayers = new LinkedHashMap<UUID, PlayerTeam>((Map<UUID, PlayerTeam>) TeamManagerImpl.INSTANCE.getKnownPlayerTeams());
+            newKnownPlayers.put(playerTeam.getId(), playerTeam);
+            knownPlayersField.set(TeamManagerImpl.INSTANCE, newKnownPlayers);
+        } catch (NoSuchFieldException | IllegalAccessException e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void setPlayerTeamOnline(ISyncPlayer player){
-        FTBTeamsAPI.getManager().getKnownPlayers().forEach((uuid, playerTeam) -> {
-            if(playerTeam.playerName.equals(player.getName())){
-                DatasyncFtbTeam.LOGGER.debug(String.format("player team of %s set online", player.getName()));
-                playerTeam.online = true;
-                playerTeam.updatePresence();
-            }
-        });
+        PlayerTeam playerTeam = (PlayerTeam) FTBTeamsAPI.api().getManager().getKnownPlayerTeams().get(player.getUUID());
+
+        if(playerTeam == null) return;
+
+        DatasyncFtbTeam.LOGGER.debug(String.format("player team of %s set online", player.getName()));
+        playerTeam.setOnline(true);
+        playerTeam.updatePresence();
     }
 
     public static void sendInvitationMessage(UUID playerUUID, PartyTeam team, ServerPlayer sourcePlayer){
-        UUID playerInvitedUUID = FTBTeamsAPI.getManager().getInternalPlayerTeam(playerUUID).getPlayer().getUUID();
-
-        CrossServerCoreAPI.getPlayer(playerInvitedUUID).ifPresent(playerInvited -> {
+        CrossServerCoreAPI.getPlayer(playerUUID).ifPresent(playerInvited -> {
             new SendMessage(Component.translatable("ftbteams.message.invite_sent", sourcePlayer.getName().copy().withStyle(ChatFormatting.YELLOW)), playerInvited).send();
             Component acceptButton = Component.translatable("ftbteams.accept")
                     .withStyle(Style.EMPTY.withColor(ChatFormatting.GREEN).withClickEvent(
-                            new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + team.getStringID()))
+                            new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party join " + team.getId().toString()))
                     );
             Component declineButton = Component.translatable("ftbteams.decline")
                     .withStyle(Style.EMPTY.withColor(ChatFormatting.RED).withClickEvent(
-                            new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + team.getStringID()))
+                            new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ftbteams party deny_invite " + team.getId().toString()))
                     );
             new SendMessage(Component.literal("[").append(acceptButton).append("] [").append(declineButton).append("]"), playerInvited).send();
         });

@@ -2,13 +2,14 @@ package fr.modcraftmc.datasync.ftbteams.mixin;
 
 import com.mojang.authlib.GameProfile;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
-import dev.ftb.mods.ftbteams.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.FTBTeamsAPI;
+import dev.ftb.mods.ftbteams.api.TeamRank;
 import dev.ftb.mods.ftbteams.data.PartyTeam;
-import dev.ftb.mods.ftbteams.data.TeamRank;
+import dev.ftb.mods.ftbteams.data.PlayerTeam;
 import dev.ftb.mods.ftbteams.net.PlayerGUIOperationMessage;
 import fr.modcraftmc.datasync.ftbteams.DatasyncFtbTeam;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -23,7 +24,7 @@ public class MixinPlayerGUIOperationMessage
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getPlayerList()Lnet/minecraft/server/players/PlayerList;", ordinal = 1) , method = "processTarget", remap = true)
     protected void onProcessInvite(ServerPlayer sourcePlayer, TeamRank senderRank, PartyTeam partyTeam, UUID targetId, CallbackInfo ci){
         DatasyncFtbTeam.LOGGER.debug("FTBTeams GUI invite processing");
-        String targetName = FTBTeamsAPI.getManager().getInternalPlayerTeam(targetId).playerName;
+        String targetName = ((PlayerTeam) FTBTeamsAPI.api().getManager().getPlayerTeamForPlayerID(targetId).get()).getPlayerName();
         if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(targetId) == null && targetName != null){
             try {
                 partyTeam.invite(sourcePlayer, List.of(new GameProfile(targetId, targetName)));

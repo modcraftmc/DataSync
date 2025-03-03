@@ -1,7 +1,7 @@
 package fr.modcraftmc.datasync.ftbteams;
 
 import com.mojang.logging.LogUtils;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
 import org.slf4j.Logger;
 
 @Mod("datasyncftbteams")

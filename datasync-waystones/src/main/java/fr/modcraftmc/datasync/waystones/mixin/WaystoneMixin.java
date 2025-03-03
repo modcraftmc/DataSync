@@ -1,19 +1,25 @@
 package fr.modcraftmc.datasync.waystones.mixin;
 
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
-import net.blay09.mods.waystones.api.IWaystone;
-import net.blay09.mods.waystones.core.Waystone;
+import net.blay09.mods.waystones.api.Waystone;
+import net.blay09.mods.waystones.core.WaystoneImpl;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.MutableComponent;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(value = Waystone.class, remap = false)
+@Mixin(value = WaystoneImpl.class, remap = false)
 public class WaystoneMixin {
-    @Redirect(method = "write(Lnet/minecraft/network/FriendlyByteBuf;Lnet/blay09/mods/waystones/api/IWaystone;)V", at = @At(value = "INVOKE", target = "Lnet/blay09/mods/waystones/api/IWaystone;getName()Ljava/lang/String;"))
-    private static String redirectWriteName(IWaystone instance) {
+    //redirect is not working i don't know why
+    @Redirect(method = "write(Lnet/minecraft/network/FriendlyByteBuf/RegistryFriendlyByteBuf;Lnet/blay09/mods/waystones/api/Waystone;)V", at = @At(value = "INVOKE", target = "Lnet/blay09/mods/waystones/core/WaystoneImpl;getName()Lnet/minecraft/network/chat/Component;"), remap = false)
+    private static Component redirectWriteName(Waystone instance) {
         String appendText = DatasyncWaystones.waystoneManager.isWaystoneOnCurrentServer(instance) ? " (l)" : " (r)"; // (l) for local, (r) for remote
-        if(instance.getName().isEmpty())
+        if(instance.getName().getString().isEmpty())
             return instance.getName();
-        return instance.getName() + appendText;
+
+        MutableComponent name = instance.getName().copy();
+        name.append(appendText);
+        return name;
     }
 }

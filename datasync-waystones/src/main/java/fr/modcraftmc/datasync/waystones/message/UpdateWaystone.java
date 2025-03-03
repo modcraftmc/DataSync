@@ -6,29 +6,29 @@ import fr.modcraftmc.crossservercore.api.annotation.AutoSerialize;
 import fr.modcraftmc.crossservercore.api.message.BaseMessage;
 import fr.modcraftmc.crossservercore.api.networkdiscovery.ISyncServer;
 import fr.modcraftmc.datasync.waystones.DatasyncWaystones;
-import net.blay09.mods.waystones.api.IWaystone;
+import net.blay09.mods.waystones.api.Waystone;
 
 @AutoRegister("update_waystones")
 public class UpdateWaystone extends BaseMessage {
 
     @AutoSerialize
-    private IWaystone iwaystone;
+    private Waystone waystone;
     @AutoSerialize
     private ISyncServer server;
 
     private UpdateWaystone() {}
 
-    public UpdateWaystone(IWaystone waystone) {
+    public UpdateWaystone(Waystone waystone) {
         this(waystone, CrossServerCoreAPI.getServer());
     }
 
-    private UpdateWaystone(IWaystone waystone, ISyncServer server) {
-        this.iwaystone = waystone;
+    private UpdateWaystone(Waystone waystone, ISyncServer server) {
+        this.waystone = waystone;
         this.server = server;
     }
 
     @Override
     public void handle() {
-        DatasyncWaystones.waystoneManager.enableWaystone(iwaystone, server);
+        DatasyncWaystones.waystoneManager.enableWaystone(waystone, server);
     }
 }

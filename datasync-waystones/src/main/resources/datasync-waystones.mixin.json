@@ -5,7 +5,7 @@
   "client" : [
   ],
   "server": [
-    "PlayerWaystoneManagerMixin",
+    "WaystoneTeleportManagerMixin",
     "WaystoneManagerMixin",
     "WaystoneMixin",
     "WaystoneSyncManagerMixin"

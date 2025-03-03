@@ -5,7 +5,7 @@ import fr.modcraftmc.datasync.tp.DatasyncTp;
 import fr.modcraftmc.datasync.tp.message.TpaRequestMessage;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 
 public class TpaRequest {
     private final ISyncPlayer playerSource;

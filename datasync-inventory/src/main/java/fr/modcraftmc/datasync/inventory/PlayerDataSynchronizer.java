@@ -9,9 +9,9 @@ import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.server.ServerLifecycleHooks;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.entity.player.PlayerEvent;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.bson.Document;
 
 import java.sql.Timestamp;
@@ -19,7 +19,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@Mod.EventBusSubscriber(modid = DatasyncInventory.MOD_ID, bus = Mod.EventBusSubscriber.Bus.FORGE)
+@EventBusSubscriber(modid = DatasyncInventory.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
 public class PlayerDataSynchronizer {
     private static List<TemporalPlayerData> playerData = new ArrayList<>();
     private static int keepTime = 30; // seconds to hold data

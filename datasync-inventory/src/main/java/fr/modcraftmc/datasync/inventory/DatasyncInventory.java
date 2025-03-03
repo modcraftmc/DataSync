@@ -2,8 +2,8 @@ package fr.modcraftmc.datasync.inventory;
 
 import com.mojang.logging.LogUtils;
 import fr.modcraftmc.crossservercore.api.events.CrossServerCoreReadyEvent;
-import net.minecraftforge.common.MinecraftForge;
-import net.minecraftforge.fml.common.Mod;
+import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 @Mod("datasyncinventory")
@@ -14,10 +14,10 @@ public class DatasyncInventory {
     public DatasyncInventory() {
         LOGGER.info("DatasyncInventory loading...");
 
-        MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerJoined);
-        MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerSave);
-        MinecraftForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerLeaved);
-        MinecraftForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
+        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerJoined);
+        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerSave);
+        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerLeaved);
+        NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
 
         LOGGER.info("DatasyncInventory loaded !");
     }

@@ -2,6 +2,7 @@ package fr.modcraftmc.datasync.inventory.serialization;
 
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
+import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.ListTag;
 import net.minecraft.nbt.StringTag;
@@ -13,84 +14,117 @@ import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraftforge.common.capabilities.Capability;
-import net.minecraftforge.energy.IEnergyStorage;
-import net.minecraftforge.fluids.FluidStack;
-import net.minecraftforge.fluids.capability.IFluidHandler;
-import net.minecraftforge.fml.ModList;
-import net.minecraftforge.items.IItemHandler;
-import net.minecraftforge.items.ItemStackHandler;
-import net.minecraftforge.server.ServerLifecycleHooks;
-import net.p3pp3rf1y.sophisticatedbackpacks.api.CapabilityBackpackWrapper;
+import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.capabilities.ItemCapability;
+import net.neoforged.neoforge.energy.IEnergyStorage;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.items.IItemHandler;
+import net.neoforged.neoforge.items.ItemStackHandler;
+import net.neoforged.neoforge.server.ServerLifecycleHooks;
+import net.p3pp3rf1y.sophisticatedbackpacks.backpack.BackpackItem;
+import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.BackpackWrapper;
+import net.p3pp3rf1y.sophisticatedbackpacks.backpack.wrapper.IBackpackWrapper;
 import net.p3pp3rf1y.sophisticatedcore.api.IStorageFluidHandler;
 import net.p3pp3rf1y.sophisticatedcore.inventory.InventoryHandler;
 import net.p3pp3rf1y.sophisticatedcore.upgrades.UpgradeHandler;
+import org.apache.logging.log4j.util.TriConsumer;
 import top.theillusivec4.curios.api.CuriosCapability;
+import top.theillusivec4.curios.api.type.capability.ICuriosItemHandler;
 import top.theillusivec4.curios.api.type.inventory.ICurioStacksHandler;
 import top.theillusivec4.curios.api.type.inventory.IDynamicStackHandler;
 
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
+import java.util.function.BiFunction;
 
 public class PlayerSerializer {
     public static final String PLAYER_DATA_IDENTIFIER = "playerData";
     public static final String CURIOS_INVENTORY_IDENTIFIER = "curiosInventory";
 
-    private static final Map<Capability, CapabilitySerializer> CAPABILITY_SERIALIZERS = new Hashtable<>();
+    private static final Map<ItemCapability, CapabilitySerializer> CAPABILITY_SERIALIZERS = new Hashtable<>();
+    private static final List<ItemCustomSerializer> CUSTOM_SERIALIZERS = new ArrayList<>();
 
-    private static final List<Capability> CAPABILITIES_TO_SAVE_BY_DEFAULT = new ArrayList<>();
+    private static final List<ItemCapability> CAPABILITIES_TO_SAVE_BY_DEFAULT = new ArrayList<>();
 
     private static class CapabilitySerializer<T> {
-        private final Capability<T> capability;
-        private final Function<T, CompoundTag> serializer;
-        private final BiConsumer<T, CompoundTag> deserializer;
+        private final ItemCapability<T, Void> capability;
+        private final BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer;
+        private final TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer;
 
-        public CapabilitySerializer(Capability<T> capability, Function<T, CompoundTag> serializer, BiConsumer<T, CompoundTag> deserializer) {
+        public CapabilitySerializer(ItemCapability<T, Void> capability, BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer, TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer) {
             this.capability = capability;
             this.serializer = serializer;
             this.deserializer = deserializer;
         }
 
-        public Capability<T> getCapability() {
+        public ItemCapability<T, Void> getCapability() {
             return capability;
         }
 
-        public Function<T, CompoundTag> getSerializer() {
+        public BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> getSerializer() {
             return serializer;
         }
 
-        public BiConsumer<T, CompoundTag> getDeserializer() {
+        public TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> getDeserializer() {
             return deserializer;
         }
 
-        public CompoundTag serialize(T instance) {
-            return serializer.apply(instance);
+        public CompoundTag serialize(HolderLookup.Provider lookup, ItemStack itemStack) {
+            return serializer.apply(lookup, itemStack);
         }
 
-        public void deserialize(T instance, CompoundTag tag) {
-            deserializer.accept(instance, tag);
+        public void deserialize(HolderLookup.Provider lookup, ItemStack itemStack, CompoundTag tag) {
+            deserializer.accept(lookup, itemStack, tag);
         }
     }
 
-    public static <T> void registerSerializer(Capability<T> capability, Function<T, CompoundTag> serializer, BiConsumer<T, CompoundTag> deserializer) {
-        CAPABILITY_SERIALIZERS.put(capability, new CapabilitySerializer(capability, serializer, deserializer));
+    private static class ItemCustomSerializer<I extends Item>{
+        private final Class<I> itemClass;
+        private final BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer;
+        private final TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer;
 
+        public ItemCustomSerializer(Class<I> clazz, BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer, TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer) {
+            itemClass = clazz;
+            this.serializer = serializer;
+            this.deserializer = deserializer;
+        }
+
+        public CompoundTag serialize(HolderLookup.Provider lookup, ItemStack itemStack) {
+            return serializer.apply(lookup, itemStack);
+        }
+
+        public void deserialize(HolderLookup.Provider lookup, ItemStack itemStack, CompoundTag tag) {
+            deserializer.accept(lookup, itemStack, tag);
+        }
+
+        public boolean isItemSerializer(Item item) {
+            return item.getClass() == itemClass;
+        }
+    }
+
+    public static <T> void registerCapabilitySerializer(ItemCapability<T, Void> capability, BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer, TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer) {
+        CAPABILITY_SERIALIZERS.put(capability, new CapabilitySerializer(capability, serializer, deserializer));
+    }
+    public static <I extends Item> void registerCustomSerializer(Class<I> clazz, BiFunction<HolderLookup.Provider, ItemStack, CompoundTag> serializer, TriConsumer<HolderLookup.Provider, ItemStack, CompoundTag> deserializer) {
+        CUSTOM_SERIALIZERS.add(new ItemCustomSerializer(clazz, serializer, deserializer));
     }
 
     static {
         if(ModList.get().isLoaded(References.SOPHISTICATED_BACKPACKS_MOD_ID)){
             DatasyncInventory.LOGGER.info("Sophisticated Backpacks mod is loaded, registering serializers for backpacks capabilities");
-            registerSerializer(CapabilityBackpackWrapper.BACKPACK_WRAPPER_CAPABILITY, (backpackWrapper) -> {
+            registerCustomSerializer(BackpackItem.class, (lookup, backpackItemStack) -> {
                 CompoundTag tag = new CompoundTag();
 
+                IBackpackWrapper backpackWrapper = BackpackWrapper.fromStack(backpackItemStack);
                 UpgradeHandler upgradeHandler = backpackWrapper.getUpgradeHandler();
                 ListTag upgrades = new ListTag();
                 for (int i = 0; i < upgradeHandler.getSlots(); i++) {
                     ItemStack stack = upgradeHandler.getStackInSlot(i);
                     if(stack.isEmpty()) continue;
-                    CompoundTag itemData = stack.save(new CompoundTag());
+                    CompoundTag itemData = new CompoundTag();
+                    itemData.put("Item",stack.save(lookup));
                     itemData.putInt("Slot", i);
                     upgrades.add(itemData);
                 }
@@ -101,7 +135,8 @@ public class PlayerSerializer {
                 for (int i = 0; i < itemHandler.getSlots(); i++) {
                     ItemStack stack = itemHandler.getStackInSlot(i);
                     if(stack.isEmpty()) continue;
-                    CompoundTag itemData = stack.save(new CompoundTag());
+                    CompoundTag itemData = new CompoundTag();
+                    itemData.put("Item", stack.save(lookup));
                     itemData.putInt("UncappedCount", stack.getCount());
                     itemData.putInt("Slot", i);
                     inventory.add(itemData);
@@ -117,12 +152,13 @@ public class PlayerSerializer {
                 optionalFluidHandler.ifPresent((fluidHandler) ->{
                     ListTag fluids = new ListTag();
                     for (int i = 0; i < fluidHandler.getTanks(); i++) {
-                        fluids.add(fluidHandler.getFluidInTank(i).writeToNBT(new CompoundTag()));
+                        fluids.add(fluidHandler.getFluidInTank(i).save(lookup));
                     }
                 });
 
                 return tag;
-            }, (backpackWrapper, tag) -> {
+            }, (lookup, backpackItemStack, tag) -> {
+                IBackpackWrapper backpackWrapper = BackpackWrapper.fromStack(backpackItemStack);
                 UpgradeHandler upgradeHandler = backpackWrapper.getUpgradeHandler();
                 for (int i = 0; i < upgradeHandler.getSlots(); i++) {
                     upgradeHandler.setStackInSlot(i, ItemStack.EMPTY);
@@ -130,7 +166,7 @@ public class PlayerSerializer {
                 ListTag upgrades = tag.getList("Upgrades", 10);
                 for (int i = 0; i < upgrades.size(); i++) {
                     CompoundTag itemData = upgrades.getCompound(i);
-                    upgradeHandler.setStackInSlot(itemData.getInt("Slot"), ItemStack.of(itemData));
+                    upgradeHandler.setStackInSlot(itemData.getInt("Slot"), ItemStack.parse(lookup, itemData).get());
                 }
 
                 InventoryHandler itemHandler = backpackWrapper.getInventoryHandler();
@@ -140,7 +176,7 @@ public class PlayerSerializer {
                 ListTag inventory = tag.getList("Items", 10);
                 for (int i = 0; i < inventory.size(); i++) {
                     CompoundTag itemData = inventory.getCompound(i);
-                    ItemStack stack = ItemStack.of(itemData);
+                    ItemStack stack = ItemStack.parse(lookup, itemData).get();
                     stack.setCount(itemData.getInt("UncappedCount"));
                     itemHandler.setStackInSlot(itemData.getInt("Slot"), stack);
                 }
@@ -156,12 +192,10 @@ public class PlayerSerializer {
                     ListTag fluids = tag.getList("Fluids", 10);
                     for (int i = 0; i < fluids.size(); i++) {
                         fluidHandler.drain(fluidHandler.getFluidInTank(i), IFluidHandler.FluidAction.EXECUTE, true);
-                        fluidHandler.fill(FluidStack.loadFluidStackFromNBT(fluids.getCompound(i)), IFluidHandler.FluidAction.EXECUTE, true);
+                        fluidHandler.fill(FluidStack.parse(lookup, fluids.getCompound(i)).get(), IFluidHandler.FluidAction.EXECUTE, true);
                     }
                 });
             });
-
-            CAPABILITIES_TO_SAVE_BY_DEFAULT.add(CapabilityBackpackWrapper.BACKPACK_WRAPPER_CAPABILITY);
         }
     }
 
@@ -175,59 +209,89 @@ public class PlayerSerializer {
     }
 
     public static void savePlayer(ServerPlayer player, CompoundTag nbt){
+        HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
+
         CompoundTag playerTag = new CompoundTag();
         player.getFoodData().addAdditionalSaveData(playerTag);
         playerTag.putFloat("Health", player.getHealth());
         playerTag.putFloat("AbsorptionAmount", player.getAbsorptionAmount());
         playerTag.put("Attributes", player.getAttributes().save());
-        playerTag.put("Inventory", savePlayerInventory(player.getInventory()));
+        playerTag.put("Inventory", savePlayerInventory(lookup, player.getInventory()));
         playerTag.putInt("SelectedItemSlot", player.getInventory().selected);
         playerTag.putFloat("XpP", player.experienceProgress);
         playerTag.putInt("XpLevel", player.experienceLevel);
         playerTag.putInt("XpTotal", player.totalExperience);
         playerTag.putInt("Score", player.getScore());
         player.getAbilities().addSaveData(playerTag);
-        playerTag.put("EnderItems", player.getEnderChestInventory().createTag());
+        playerTag.put("EnderItems", player.getEnderChestInventory().createTag(lookup));
         nbt.put(PLAYER_DATA_IDENTIFIER, playerTag);
-        savePlayerCurios(player, nbt);
+        savePlayerCurios(lookup, player, nbt);
         savePlayerAdvancements(player, nbt);
     }
 
-    public static ListTag savePlayerInventory(Inventory inventory){
+    public static ListTag savePlayerInventory(HolderLookup.Provider lookup, Inventory inventory){
         ListTag inventoryTag = new ListTag();
         for (int i = 0; i < inventory.getContainerSize(); i++) {
             if(inventory.getItem(i).isEmpty()) continue;
             ItemStack stack = inventory.getItem(i);
-            CompoundTag itemTag = saveItemStackWithCapabilities(stack, CAPABILITIES_TO_SAVE_BY_DEFAULT);
+            CompoundTag itemTag = saveItemStack(lookup, stack, true, true);
             itemTag.putInt("Slot", i);
             inventoryTag.add(itemTag);
         }
         return inventoryTag;
     }
 
-    public static CompoundTag saveItemStackWithCapabilities(ItemStack stack, List<Capability> capabilities){
-        CompoundTag itemTag = stack.save(new CompoundTag());
-        CompoundTag capabilitiesTag = new CompoundTag();
-        capabilities.forEach(capability -> {
-            stack.getCapability(capability).ifPresent(cap -> {
-                CapabilitySerializer serializer = CAPABILITY_SERIALIZERS.get(capability);
-                if(serializer != null){
-                    capabilitiesTag.put(capability.getName(), serializer.serialize(cap));
-                }
+    public static CompoundTag saveItemStack(HolderLookup.Provider lookup, ItemStack stack, boolean withCustomSerializers, boolean withCapabilities){
+        CompoundTag itemData = new CompoundTag();
+        itemData.put("Item", stack.save(lookup));
+
+        if(withCustomSerializers){
+            saveCustomSerializers(lookup, stack).ifPresent((customData) -> {
+                itemData.put("CustomData", customData);
             });
-        });
-        if(!capabilitiesTag.isEmpty())
-            itemTag.put("CapabilitiesData", capabilitiesTag);
-        return itemTag;
+        }
+
+        if(withCapabilities){
+            saveCapabilities(lookup, stack, CAPABILITIES_TO_SAVE_BY_DEFAULT).ifPresent((capabilitiesData) -> {
+                itemData.put("CapabilitiesData", capabilitiesData);
+            });
+        }
+
+        return itemData;
     }
 
-    public static CompoundTag saveItemHandlerWithCapabilities(IItemHandler handler){
+    public static Optional<CompoundTag> saveCustomSerializers(HolderLookup.Provider lookup, ItemStack stack){
+        for (ItemCustomSerializer customSerializer : CUSTOM_SERIALIZERS) {
+            if(customSerializer.isItemSerializer(stack.getItem())){
+                return Optional.of(customSerializer.serialize(lookup, stack));
+            }
+        }
+
+        return Optional.empty();
+    }
+
+    public static Optional<CompoundTag> saveCapabilities(HolderLookup.Provider lookup, ItemStack stack, List<ItemCapability> capabilities){
+        CompoundTag capabilitiesTag = new CompoundTag();
+        capabilities.forEach(capability -> {
+            if(stack.getCapability(capability) == null) return;
+
+            CapabilitySerializer serializer = CAPABILITY_SERIALIZERS.get(capability);
+            if(serializer != null){
+                capabilitiesTag.put(capability.name().toString(), serializer.serialize(lookup, stack));
+            }
+        });
+        if(!capabilitiesTag.isEmpty())
+            return Optional.of(capabilitiesTag);
+        return Optional.empty();
+    }
+
+    public static CompoundTag saveItemHandler(HolderLookup.Provider lookup, IItemHandler handler){
         CompoundTag handlerTag = new CompoundTag();
         ListTag itemList = new ListTag();
         for (int i = 0; i < handler.getSlots(); i++) {
             ItemStack stack = handler.getStackInSlot(i);
             if(stack.isEmpty()) continue;
-            CompoundTag itemTag = saveItemStackWithCapabilities(stack, CAPABILITIES_TO_SAVE_BY_DEFAULT);
+            CompoundTag itemTag = saveItemStack(lookup, stack, true, true);
             itemTag.putInt("Slot", i);
             itemList.add(itemTag);
         }
@@ -237,36 +301,71 @@ public class PlayerSerializer {
         return handlerTag;
     }
 
-    public static ItemStackHandler loadItemHandlerWithCapabilities(CompoundTag handlerTag){
+    public static ItemStack loadItemStack(HolderLookup.Provider lookup, CompoundTag tag, boolean withCustomSerializers, boolean withCapabilities){
+        ItemStack stack = ItemStack.parse(lookup, tag.getCompound("Item")).get();
+
+        if(withCustomSerializers){
+            loadCustomSerializers(lookup, stack, tag.getCompound("CustomData"));
+        }
+
+        if(withCapabilities){
+            loadCapabilities(lookup, stack, CAPABILITIES_TO_SAVE_BY_DEFAULT, tag.getCompound("CapabilitiesData"));
+        }
+
+        return stack;
+    }
+
+    public static void loadCustomSerializers(HolderLookup.Provider lookup, ItemStack stack, CompoundTag customData){
+        for (ItemCustomSerializer customSerializer : CUSTOM_SERIALIZERS) {
+            if(customSerializer.isItemSerializer(stack.getItem())){
+                customSerializer.deserialize(lookup, stack, customData);
+                return;
+            }
+        }
+    }
+
+    public static void loadCapabilities(HolderLookup.Provider lookup, ItemStack stack, List<ItemCapability> capabilities, CompoundTag capabilitiesData){
+        capabilities.forEach(capability -> {
+            if(stack.getCapability(capability) == null) return;
+
+            CapabilitySerializer serializer = CAPABILITY_SERIALIZERS.get(capability);
+            if(serializer != null){
+                serializer.deserialize(lookup, stack, capabilitiesData.getCompound(capability.name().toString()));
+            }
+        });
+    }
+
+    public static ItemStackHandler loadItemHandler(HolderLookup.Provider lookup, CompoundTag handlerTag){
         ItemStackHandler handler = new ItemStackHandler(handlerTag.getInt("Size"));
         ListTag itemList = handlerTag.getList("Items", Tag.TAG_COMPOUND);
         for (int i = 0; i < itemList.size(); i++) {
             CompoundTag itemTag = itemList.getCompound(i);
-            handler.setStackInSlot(itemTag.getInt("Slot"), loadItemStackWithCapabilities(itemTag, CAPABILITIES_TO_SAVE_BY_DEFAULT));
+            handler.setStackInSlot(itemTag.getInt("Slot"), loadItemStack(lookup, itemTag, true, true));
         }
 
         return handler;
     }
 
-    public static void savePlayerCurios(Player player, CompoundTag nbt){
+    public static void savePlayerCurios(HolderLookup.Provider lookup, Player player, CompoundTag nbt){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)) {
-            player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                // from curios - start
-                ListTag curiosInventory = new ListTag();
-                for (Map.Entry<String, ICurioStacksHandler> entry : itemHandler.getCurios().entrySet()) {
-                    CompoundTag tag = new CompoundTag();
-                    ICurioStacksHandler stacksHandler = entry.getValue();
-                    IDynamicStackHandler stacks = stacksHandler.getStacks();
-                    IDynamicStackHandler cosmetics = stacksHandler.getCosmeticStacks();
-                    tag.put("Stacks", saveItemHandlerWithCapabilities(stacks));
-                    tag.put("Cosmetics", saveItemHandlerWithCapabilities(cosmetics));
-                    tag.putString("Identifier", entry.getKey());
-                    curiosInventory.add(tag);
-                }
-                // from curios - end
+            ICuriosItemHandler curiosItemHandler = player.getCapability(CuriosCapability.INVENTORY);
+            if (curiosItemHandler == null) return;
 
-                nbt.put(CURIOS_INVENTORY_IDENTIFIER, curiosInventory);
-            });
+            // from curios - start
+            ListTag curiosInventory = new ListTag();
+            for (Map.Entry<String, ICurioStacksHandler> entry : curiosItemHandler.getCurios().entrySet()) {
+                CompoundTag tag = new CompoundTag();
+                ICurioStacksHandler stacksHandler = entry.getValue();
+                IDynamicStackHandler stacks = stacksHandler.getStacks();
+                IDynamicStackHandler cosmetics = stacksHandler.getCosmeticStacks();
+                tag.put("Stacks", saveItemHandler(lookup, stacks));
+                tag.put("Cosmetics", saveItemHandler(lookup, cosmetics));
+                tag.putString("Identifier", entry.getKey());
+                curiosInventory.add(tag);
+            }
+            // from curios - end
+
+            nbt.put(CURIOS_INVENTORY_IDENTIFIER, curiosInventory);
         }
     }
 
@@ -282,7 +381,7 @@ public class PlayerSerializer {
             if(criteriaArray.size() == 0) return;
 
             CompoundTag advancementNBT = new CompoundTag();
-            advancementNBT.putString("advancement", advancement.getId().toString());
+            advancementNBT.putString("advancement", advancement.id().toString());
             advancementNBT.put("criteria", criteriaArray);
 
             advancementsArray.add(advancementNBT);
@@ -293,22 +392,23 @@ public class PlayerSerializer {
 
     public static void deserializePlayer(String nbt, ServerPlayer player){
         CompoundTag compoundTag = SerializationUtil.ToNbt(nbt);
-        loadPlayer(compoundTag, player);
+        HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
+        loadPlayer(lookup, compoundTag, player);
     }
 
-    public static void loadPlayer(CompoundTag nbt, ServerPlayer player) {
+    public static void loadPlayer(HolderLookup.Provider lookup, CompoundTag nbt, ServerPlayer player) {
         CompoundTag playerTag = nbt.getCompound(PLAYER_DATA_IDENTIFIER);
 
         player.getFoodData().readAdditionalSaveData(playerTag);
         player.setAbsorptionAmount(playerTag.getFloat("AbsorptionAmount"));
-        if (playerTag.contains("Attributes", Tag.TAG_LIST) && player.level != null && !player.level.isClientSide) {
+        if (playerTag.contains("Attributes", Tag.TAG_LIST) && player.level() != null && !player.level().isClientSide) {
             player.getAttributes().load(playerTag.getList("Attributes", Tag.TAG_COMPOUND));
         }
         if (playerTag.contains("Health", Tag.TAG_ANY_NUMERIC)) {
             player.setHealth(playerTag.getFloat("Health"));
         }
         ListTag listtag = playerTag.getList("Inventory", Tag.TAG_COMPOUND);
-        loadPlayerInventory(listtag, player.getInventory());
+        loadPlayerInventory(lookup, listtag, player.getInventory());
         player.getInventory().selected = playerTag.getInt("SelectedItemSlot");
         player.experienceProgress = playerTag.getFloat("XpP");
         player.experienceLevel = playerTag.getInt("XpLevel");
@@ -316,11 +416,11 @@ public class PlayerSerializer {
         player.setScore(playerTag.getInt("Score"));
         player.getAbilities().loadSaveData(playerTag);
         if (playerTag.contains("EnderItems", Tag.TAG_LIST)) {
-            player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", Tag.TAG_COMPOUND));
+            player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", Tag.TAG_COMPOUND), lookup);
         }
 
         loadPlayerAdvancements(nbt, player);
-        loadPlayerCurios(nbt, player);
+        loadPlayerCurios(lookup, nbt, player);
 
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
 
@@ -329,26 +429,12 @@ public class PlayerSerializer {
         player.onUpdateAbilities();
     }
 
-    public static void loadPlayerInventory(ListTag inventoryTag, Inventory inventory){
+    public static void loadPlayerInventory(HolderLookup.Provider lookup, ListTag inventoryTag, Inventory inventory){
         inventory.clearContent();
         for (int i = 0; i < inventoryTag.size(); i++) {
             CompoundTag itemTag = inventoryTag.getCompound(i);
-            inventory.setItem(itemTag.getInt("Slot"), loadItemStackWithCapabilities(itemTag, CAPABILITIES_TO_SAVE_BY_DEFAULT));
+            inventory.setItem(itemTag.getInt("Slot"), loadItemStack(lookup, itemTag, true, true));
         }
-    }
-
-    public static ItemStack loadItemStackWithCapabilities(CompoundTag itemTag, List<Capability> capabilities){
-        ItemStack stack = ItemStack.of(itemTag);
-        CompoundTag capabilitiesTag = itemTag.getCompound("CapabilitiesData");
-        capabilities.forEach(capability -> {
-            stack.getCapability(capability).ifPresent(cap -> {
-                CapabilitySerializer serializer = CAPABILITY_SERIALIZERS.get(capability);
-                if(serializer != null){
-                    serializer.deserialize(cap, capabilitiesTag.getCompound(capability.getName()));
-                }
-            });
-        });
-        return stack;
     }
 
     //from Curios
@@ -361,37 +447,38 @@ public class PlayerSerializer {
         }
     }
 
-    public static void loadPlayerCurios(CompoundTag nbt, Player player){
+    public static void loadPlayerCurios(HolderLookup.Provider lookup, CompoundTag nbt, Player player){
         if(ModList.get().isLoaded(References.CURIOS_MOD_ID)){
             ListTag curiosInventory = nbt.getList(CURIOS_INVENTORY_IDENTIFIER, Tag.TAG_COMPOUND);
-            player.getCapability(CuriosCapability.INVENTORY).ifPresent((itemHandler) -> {
-                itemHandler.saveInventory(true);
-                // from curios - start
-                for (int i = 0; i < curiosInventory.size(); i++) {
-                    CompoundTag tag = curiosInventory.getCompound(i);
-                    String identifier = tag.getString("Identifier");
-                    ICurioStacksHandler stacksHandler = itemHandler.getCurios().get(identifier);
+            ICuriosItemHandler curiosItemHandler = player.getCapability(CuriosCapability.INVENTORY);
+            if (curiosItemHandler == null) return;
 
-                    if (stacksHandler != null) {
-                        CompoundTag stacksData = tag.getCompound("Stacks");
-                        ItemStackHandler loaded = loadItemHandlerWithCapabilities(stacksData);
-                        IDynamicStackHandler stacks = stacksHandler.getStacks();
+            curiosItemHandler.saveInventory(true);
+            // from curios - start
+            for (int i = 0; i < curiosInventory.size(); i++) {
+                CompoundTag tag = curiosInventory.getCompound(i);
+                String identifier = tag.getString("Identifier");
+                ICurioStacksHandler stacksHandler = curiosItemHandler.getCurios().get(identifier);
 
-                        if (!stacksData.isEmpty()) {
-                            loadStacks(stacksHandler, loaded, stacks);
-                        }
+                if (stacksHandler != null) {
+                    CompoundTag stacksData = tag.getCompound("Stacks");
+                    ItemStackHandler loaded = loadItemHandler(lookup, stacksData);
+                    IDynamicStackHandler stacks = stacksHandler.getStacks();
 
-                        stacksData = tag.getCompound("Cosmetics");
-                        loaded = loadItemHandlerWithCapabilities(stacksData);
-                        stacks = stacksHandler.getCosmeticStacks();
+                    if (!stacksData.isEmpty()) {
+                        loadStacks(stacksHandler, loaded, stacks);
+                    }
 
-                        if (!stacksData.isEmpty()) {
-                            loadStacks(stacksHandler, loaded, stacks);
-                        }
+                    stacksData = tag.getCompound("Cosmetics");
+                    loaded = loadItemHandler(lookup, stacksData);
+                    stacks = stacksHandler.getCosmeticStacks();
+
+                    if (!stacksData.isEmpty()) {
+                        loadStacks(stacksHandler, loaded, stacks);
                     }
                 }
-                // from curios - end
-            });
+            }
+            // from curios - end
         }
     }
 
@@ -408,26 +495,23 @@ public class PlayerSerializer {
             for (int j = 0; j < criteriaArray.size(); j++) {
                 completedCriteria.add(criteriaArray.getString(j));
             }
-
-            completedAdvancements.put(new ResourceLocation(((StringTag) advancementElement.get("advancement")).getAsString()), completedCriteria);
+            completedAdvancements.put(ResourceLocation.parse(advancementElement.getString("advancement")), completedCriteria);
         }
 
         PlayerAdvancements playerAdvancements = server.getPlayerList().getPlayerAdvancements(player);
         server.getAdvancements().getAllAdvancements().forEach(advancement -> {
             playerAdvancements.getOrStartProgress(advancement).getCompletedCriteria().forEach(criterion -> {
-                if(!completedAdvancements.containsKey(advancement.getId()) || !completedAdvancements.get(advancement.getId()).contains(criterion)) {
+                if(!completedAdvancements.containsKey(advancement.id()) || !completedAdvancements.get(advancement.id()).contains(criterion)) {
                     playerAdvancements.getOrStartProgress(advancement).getCriterion(criterion).revoke();
                 }
             });
-            if(completedAdvancements.containsKey(advancement.getId())){
+            if(completedAdvancements.containsKey(advancement.id())){
                 playerAdvancements.getOrStartProgress(advancement).getRemainingCriteria().forEach(criterion -> {
-                    if(completedAdvancements.get(advancement.getId()).contains(criterion)) {
+                    if(completedAdvancements.get(advancement.id()).contains(criterion)) {
                         playerAdvancements.getOrStartProgress(advancement).getCriterion(criterion).grant();
                     }
                 });
             }
         });
-
-        playerAdvancements.ensureAllVisible();
     }
 }

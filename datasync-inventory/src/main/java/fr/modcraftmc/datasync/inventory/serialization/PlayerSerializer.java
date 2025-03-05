@@ -1,12 +1,13 @@
 package fr.modcraftmc.datasync.inventory.serialization;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
 import net.minecraft.core.HolderLookup;
-import net.minecraft.nbt.CompoundTag;
-import net.minecraft.nbt.ListTag;
-import net.minecraft.nbt.StringTag;
-import net.minecraft.nbt.Tag;
+import net.minecraft.core.component.DataComponentPatch;
+import net.minecraft.core.component.PatchedDataComponentMap;
+import net.minecraft.nbt.*;
 import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -16,6 +17,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.GameType;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.ItemCapability;
 import net.neoforged.neoforge.energy.IEnergyStorage;
@@ -47,6 +49,13 @@ public class PlayerSerializer {
     private static final List<ItemCustomSerializer> CUSTOM_SERIALIZERS = new ArrayList<>();
 
     private static final List<ItemCapability> CAPABILITIES_TO_SAVE_BY_DEFAULT = new ArrayList<>();
+    private static final Codec<ItemStack> NO_COUNT_LIMIT_ITEM_STACK_CODEC = Codec.lazyInitialized(() -> { // C'est du scotch
+        return RecordCodecBuilder.create((p_347288_) -> {
+            return p_347288_.group(ItemStack.ITEM_NON_AIR_CODEC.fieldOf("id").forGetter(ItemStack::getItemHolder), Codec.INT.fieldOf("count").forGetter(ItemStack::getCount), DataComponentPatch.CODEC.optionalFieldOf("components", DataComponentPatch.EMPTY).forGetter((p_330103_) -> {
+                return ((PatchedDataComponentMap) p_330103_.getComponents()).asPatch();
+            })).apply(p_347288_, ItemStack::new);
+        });
+    });
 
     private static class CapabilitySerializer<T> {
         private final ItemCapability<T, Void> capability;
@@ -124,7 +133,7 @@ public class PlayerSerializer {
                     ItemStack stack = upgradeHandler.getStackInSlot(i);
                     if(stack.isEmpty()) continue;
                     CompoundTag itemData = new CompoundTag();
-                    itemData.put("Item",stack.save(lookup));
+                    itemData.put("Item", saveItemStack(lookup, stack, true, true));
                     itemData.putInt("Slot", i);
                     upgrades.add(itemData);
                 }
@@ -136,7 +145,7 @@ public class PlayerSerializer {
                     ItemStack stack = itemHandler.getStackInSlot(i);
                     if(stack.isEmpty()) continue;
                     CompoundTag itemData = new CompoundTag();
-                    itemData.put("Item", stack.save(lookup));
+                    itemData.put("Item", saveItemStack(lookup, stack, true, true));
                     itemData.putInt("UncappedCount", stack.getCount());
                     itemData.putInt("Slot", i);
                     inventory.add(itemData);
@@ -166,7 +175,7 @@ public class PlayerSerializer {
                 ListTag upgrades = tag.getList("Upgrades", 10);
                 for (int i = 0; i < upgrades.size(); i++) {
                     CompoundTag itemData = upgrades.getCompound(i);
-                    upgradeHandler.setStackInSlot(itemData.getInt("Slot"), ItemStack.parse(lookup, itemData).get());
+                    upgradeHandler.setStackInSlot(itemData.getInt("Slot"), loadItemStack(lookup, itemData.getCompound("Item"), true, true));
                 }
 
                 InventoryHandler itemHandler = backpackWrapper.getInventoryHandler();
@@ -176,7 +185,7 @@ public class PlayerSerializer {
                 ListTag inventory = tag.getList("Items", 10);
                 for (int i = 0; i < inventory.size(); i++) {
                     CompoundTag itemData = inventory.getCompound(i);
-                    ItemStack stack = ItemStack.parse(lookup, itemData).get();
+                    ItemStack stack = loadItemStack(lookup, itemData.getCompound("Item"), true, true);
                     stack.setCount(itemData.getInt("UncappedCount"));
                     itemHandler.setStackInSlot(itemData.getInt("Slot"), stack);
                 }
@@ -222,6 +231,7 @@ public class PlayerSerializer {
         playerTag.putInt("XpLevel", player.experienceLevel);
         playerTag.putInt("XpTotal", player.totalExperience);
         playerTag.putInt("Score", player.getScore());
+        playerTag.putInt("GameMode", player.gameMode.getGameModeForPlayer().getId());
         player.getAbilities().addSaveData(playerTag);
         playerTag.put("EnderItems", player.getEnderChestInventory().createTag(lookup));
         nbt.put(PLAYER_DATA_IDENTIFIER, playerTag);
@@ -243,7 +253,9 @@ public class PlayerSerializer {
 
     public static CompoundTag saveItemStack(HolderLookup.Provider lookup, ItemStack stack, boolean withCustomSerializers, boolean withCapabilities){
         CompoundTag itemData = new CompoundTag();
-        itemData.put("Item", stack.save(lookup));
+
+        Tag item = NO_COUNT_LIMIT_ITEM_STACK_CODEC.encodeStart(NbtOps.INSTANCE, stack).result().orElseThrow();
+        itemData.put("Item", item);
 
         if(withCustomSerializers){
             saveCustomSerializers(lookup, stack).ifPresent((customData) -> {
@@ -302,7 +314,7 @@ public class PlayerSerializer {
     }
 
     public static ItemStack loadItemStack(HolderLookup.Provider lookup, CompoundTag tag, boolean withCustomSerializers, boolean withCapabilities){
-        ItemStack stack = ItemStack.parse(lookup, tag.getCompound("Item")).get();
+        ItemStack stack = NO_COUNT_LIMIT_ITEM_STACK_CODEC.parse(lookup.createSerializationContext(NbtOps.INSTANCE), tag.get("Item")).result().orElseThrow();
 
         if(withCustomSerializers){
             loadCustomSerializers(lookup, stack, tag.getCompound("CustomData"));
@@ -414,6 +426,7 @@ public class PlayerSerializer {
         player.experienceLevel = playerTag.getInt("XpLevel");
         player.totalExperience = playerTag.getInt("XpTotal");
         player.setScore(playerTag.getInt("Score"));
+        player.setGameMode(GameType.byId(playerTag.getInt("GameMode")));
         player.getAbilities().loadSaveData(playerTag);
         if (playerTag.contains("EnderItems", Tag.TAG_LIST)) {
             player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", Tag.TAG_COMPOUND), lookup);
@@ -423,10 +436,7 @@ public class PlayerSerializer {
         loadPlayerCurios(lookup, nbt, player);
 
         player.connection.send(new ClientboundSetCarriedItemPacket(player.getInventory().selected)); // Update held item
-
-        // also update data for the client
-        player.gameMode.getGameModeForPlayer().updatePlayerAbilities(player.getAbilities());
-        player.onUpdateAbilities();
+        player.onUpdateAbilities(); // also update data for the client
     }
 
     public static void loadPlayerInventory(HolderLookup.Provider lookup, ListTag inventoryTag, Inventory inventory){

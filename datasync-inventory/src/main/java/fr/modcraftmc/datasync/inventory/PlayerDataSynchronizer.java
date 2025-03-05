@@ -9,6 +9,7 @@ import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
@@ -19,7 +20,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-@EventBusSubscriber(modid = DatasyncInventory.MOD_ID, bus = EventBusSubscriber.Bus.MOD)
+@EventBusSubscriber(modid = DatasyncInventory.MOD_ID)
 public class PlayerDataSynchronizer {
     private static List<TemporalPlayerData> playerData = new ArrayList<>();
     private static int keepTime = 30; // seconds to hold data
@@ -35,6 +36,7 @@ public class PlayerDataSynchronizer {
         playerData.removeIf(temporalPlayerData -> temporalPlayerData.time + keepTime < System.currentTimeMillis() / 1000);
     }
 
+    @SubscribeEvent
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         CrossServerCoreAPI.getPlayer(player.getUUID()).ifPresentOrElse(syncPlayer -> {
@@ -47,6 +49,7 @@ public class PlayerDataSynchronizer {
         });
     }
 
+    @SubscribeEvent
     public static void onPlayerSave(PlayerEvent.SaveToFile event){
         checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
@@ -54,6 +57,7 @@ public class PlayerDataSynchronizer {
             saveDataToDatabase(player);
     }
 
+    @SubscribeEvent
     public static void onPlayerLeaved(PlayerEvent.PlayerLoggedOutEvent event){
         checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());

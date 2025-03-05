@@ -12,15 +12,15 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.UUID;
 
-@Mixin(value = dev.ftb.mods.ftbteams.api.Team.class, remap = false)
-public class MixinTeam {
-    @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManager;syncTeamsToAll([Ldev/ftb/mods/ftbteams/data/Team;)V") , method = "denyInvite")
+@Mixin(value = dev.ftb.mods.ftbteams.data.AbstractTeam.class, remap = false)
+public class MixinAbstractTeam {
+    @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/TeamManagerImpl;syncToAll([Ldev/ftb/mods/ftbteams/api/Team;)V") , method = "declineInvitation")
     protected void onDenyInvite(CommandSourceStack source, CallbackInfoReturnable<Integer> cir){
         DatasyncFtbTeam.LOGGER.debug("FTBTeams Team denying invite");
         DatasyncFtbTeam.teamsSynchronizer.syncTeam((dev.ftb.mods.ftbteams.api.Team) (Object) this);
     }
 
-    @Inject(at = @At(value = "INVOKE", target = "Ldev/ftb/mods/ftbteams/data/Team;getOnlineMembers()Ljava/util/List;") , method = "sendMessage")
+    @Inject(at = @At(value = "RETURN"), method = "sendMessage(Ljava/util/UUID;Lnet/minecraft/network/chat/Component;)V")
     protected void onSendMessage(UUID from, Component text, CallbackInfo ci){
         DatasyncFtbTeam.LOGGER.debug("FTBTeams Team sending message");
         Team team = (Team) (Object) this;

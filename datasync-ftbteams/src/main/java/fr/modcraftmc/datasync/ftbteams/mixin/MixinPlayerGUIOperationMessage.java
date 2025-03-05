@@ -22,7 +22,7 @@ import java.util.UUID;
 public class MixinPlayerGUIOperationMessage
 {
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/server/MinecraftServer;getPlayerList()Lnet/minecraft/server/players/PlayerList;", ordinal = 1) , method = "processTarget", remap = false)
-    protected void onProcessInvite(ServerPlayer sourcePlayer, TeamRank senderRank, PartyTeam partyTeam, UUID targetId, CallbackInfo ci){
+    private static void onProcessInvite(ServerPlayer sourcePlayer, TeamRank senderRank, PartyTeam partyTeam, PlayerGUIOperationMessage.Operation op, UUID targetId, CallbackInfo ci){
         DatasyncFtbTeam.LOGGER.debug("FTBTeams GUI invite processing");
         String targetName = ((PlayerTeam) FTBTeamsAPI.api().getManager().getPlayerTeamForPlayerID(targetId).get()).getPlayerName();
         if(ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(targetId) == null && targetName != null){

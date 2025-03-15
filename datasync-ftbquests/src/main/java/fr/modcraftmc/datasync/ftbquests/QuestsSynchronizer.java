@@ -165,7 +165,7 @@ public class QuestsSynchronizer {
     // Code from QuestFile class adapted to write in SNBT instead of a file
     public static SNBTCompoundTag serializeQuests(BaseQuestFile questFile){
         SNBTCompoundTag questsNBT = new SNBTCompoundTag();
-        HolderLookup.Provider lookup = (HolderLookup.Provider) ServerLifecycleHooks.getCurrentServer().registryAccess().asGetterLookup();
+        HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
 
         questsNBT.putInt("version", BaseQuestFile.VERSION);
         questFile.writeData(questsNBT, lookup);
@@ -247,7 +247,7 @@ public class QuestsSynchronizer {
 
     // Code from QuestFile class adapted to read from SNBT instead of a file
     public static void deserializeQuests(BaseQuestFile questFile, SNBTCompoundTag questsNBT){
-        HolderLookup.Provider lookup = (HolderLookup.Provider) ServerLifecycleHooks.getCurrentServer().registryAccess().asGetterLookup();
+        HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
 
         questFile.clearCachedData();
         questFile.getDefaultChapterGroup().getChapters().clear();

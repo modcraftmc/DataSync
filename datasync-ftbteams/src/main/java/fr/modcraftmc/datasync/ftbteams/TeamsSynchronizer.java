@@ -50,7 +50,7 @@ public class TeamsSynchronizer {
     public ISharedDataStore databaseTeamsData = new SharedDataStore(References.TEAMS_DATA_COLLECTION_NAME);
 
     public static HolderLookup.Provider getLookupProvider(){
-        return (HolderLookup.Provider) ServerLifecycleHooks.getCurrentServer().registryAccess().asGetterLookup();
+        return ServerLifecycleHooks.getCurrentServer().registryAccess();
     }
 
     public TeamsSynchronizer() {
@@ -128,7 +128,8 @@ public class TeamsSynchronizer {
     public void handleTeamSync(SyncTeams syncTeamMessage){
         if(!FTBTeamsLoaded) return;
         CompoundTag teamsData = SerializationUtil.GetNbt(syncTeamMessage.teamsData);
-        AbstractTeam team = (AbstractTeam) FTBTeamsAPI.api().getManager().getTeamByID(syncTeamMessage.teamUUID).get();
+        AbstractTeam team = TeamManagerImpl.INSTANCE.getTeamMap().getOrDefault(syncTeamMessage.teamUUID, null);
+
         DatasyncFtbTeam.LOGGER.debug(String.format("team id: %s; team: %s", syncTeamMessage.teamUUID, team));
         if(team == null) {
             team = getNewTeam(syncTeamMessage.teamType, syncTeamMessage.teamUUID);
@@ -187,7 +188,7 @@ public class TeamsSynchronizer {
     public void handleTeamMessage(UUID teamUUID, UUID from, Component message){
         DatasyncFtbTeam.LOGGER.debug(String.format("Received team message: %s", message.getString()));
         if(!FTBTeamsLoaded) return;
-        AbstractTeam team = (AbstractTeam) FTBTeamsAPI.api().getManager().getTeamByID(teamUUID).get();
+        AbstractTeam team = TeamManagerImpl.INSTANCE.getTeamMap().getOrDefault(teamUUID, null);
         DatasyncFtbTeam.LOGGER.debug(String.format("team id: %s; team: %s", teamUUID, team));
         if(team == null) return;
         team.addMessage(new TeamMessageImpl(from, System.currentTimeMillis(), message));

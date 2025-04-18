@@ -1,5 +1,6 @@
 package fr.modcraftmc.datasync.tp.tpsync;
 
+import fr.modcraftmc.datasync.tp.DatasyncTp;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
@@ -13,7 +14,7 @@ import java.util.UUID;
 
 public class TpRequestHandler {
     private static final List<TpRequest> tpRequestsBuffer = new ArrayList<>();
-    public static final int tpTimeout = 20; //time in second before tp request expire
+    public static final int tpTimeout = 60; //time in second before tp request expire
 
     public static void handle(TpRequest tpRequest){
         UUID playerSourceUUID = tpRequest.getPlayerSource().getUUID();
@@ -29,7 +30,7 @@ public class TpRequestHandler {
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event){
         cleanTpRequest();
         for(TpRequest tpRequest : tpRequestsBuffer){
-            if(tpRequest.getPlayerSource().equals(event.getEntity().getName().getString())){
+            if(tpRequest.getPlayerSource().getName().equals(event.getEntity().getName().getString())){
                 MinecraftServer server = event.getEntity().getServer();
                 teleportPlayer(server, tpRequest.getPlayerSource().getUUID(), tpRequest.getPlayerTarget().getUUID());
                 tpRequestsBuffer.remove(tpRequest);

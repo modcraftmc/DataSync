@@ -127,9 +127,9 @@ public class HomeCommand extends CommandModule {
             message.append("\n");
 
             if(selfPlayerHomes)
-                message.append(Component.literal(String.format("[%s] %s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] %s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + home.name()))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
             else
-                message.append(Component.literal(String.format("[%s] M%s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + player + " " + home))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
+                message.append(Component.literal(String.format("[%s] M%s", home.name(), ChatFormatting.GRAY)).withStyle(style -> style.withClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/home " + player + " " + home.name()))).withStyle(style -> style.withColor(ChatFormatting.GREEN)));
 
             if (DatasyncHomes.homeManager.isLocalHome(player, home)) {
                 message.append("(local)");

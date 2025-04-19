@@ -1,6 +1,7 @@
 package fr.modcraftmc.datasync.inventory.serialization;
 
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
@@ -8,6 +9,7 @@ import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.PatchedDataComponentMap;
 import net.minecraft.nbt.*;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetCarriedItemPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -17,6 +19,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.capabilities.ItemCapability;
@@ -251,11 +254,17 @@ public class PlayerSerializer {
         return inventoryTag;
     }
 
-    public static CompoundTag saveItemStack(HolderLookup.Provider lookup, ItemStack stack, boolean withCustomSerializers, boolean withCapabilities){
+    public static CompoundTag saveItemStack(HolderLookup.Provider lookup, ItemStack stack, boolean withCustomSerializers, boolean withCapabilities) {
         CompoundTag itemData = new CompoundTag();
 
-        Tag item = NO_COUNT_LIMIT_ITEM_STACK_CODEC.encodeStart(NbtOps.INSTANCE, stack).result().orElseThrow();
-        itemData.put("Item", item);
+        DataResult<Tag> dataResult = NO_COUNT_LIMIT_ITEM_STACK_CODEC.encodeStart(lookup.createSerializationContext(NbtOps.INSTANCE), stack);
+
+        if (dataResult.error().isPresent()) {
+            DatasyncInventory.LOGGER.error("Failed to serialize item stack: " + dataResult.error().get().message());
+            return itemData;
+        }
+
+        itemData.put("Item", dataResult.getOrThrow());
 
         if(withCustomSerializers){
             saveCustomSerializers(lookup, stack).ifPresent((customData) -> {
@@ -313,8 +322,17 @@ public class PlayerSerializer {
         return handlerTag;
     }
 
-    public static ItemStack loadItemStack(HolderLookup.Provider lookup, CompoundTag tag, boolean withCustomSerializers, boolean withCapabilities){
-        ItemStack stack = NO_COUNT_LIMIT_ITEM_STACK_CODEC.parse(lookup.createSerializationContext(NbtOps.INSTANCE), tag.get("Item")).result().orElseThrow();
+    public static ItemStack loadItemStack(HolderLookup.Provider lookup, CompoundTag tag, boolean withCustomSerializers, boolean withCapabilities) {
+        DataResult<ItemStack> dataResult = NO_COUNT_LIMIT_ITEM_STACK_CODEC.parse(lookup.createSerializationContext(NbtOps.INSTANCE), tag.get("Item"));
+
+        //TODO: better handle error?
+        if (dataResult.error().isPresent()) {
+            DatasyncInventory.LOGGER.error("Failed to deserialize item stack: " + dataResult.error().get().message());
+            ItemStack stack = Items.BARRIER.getDefaultInstance();
+            return stack;
+        }
+
+        ItemStack stack = dataResult.getOrThrow();
 
         if(withCustomSerializers){
             loadCustomSerializers(lookup, stack, tag.getCompound("CustomData"));
@@ -405,6 +423,12 @@ public class PlayerSerializer {
     public static void deserializePlayer(String nbt, ServerPlayer player){
         CompoundTag compoundTag = SerializationUtil.ToNbt(nbt);
         HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
+
+        if (compoundTag == null) {
+            DatasyncInventory.LOGGER.error("Failed to deserialize player data, compound tag is null");
+            player.connection.disconnect(Component.literal("Datasync error: Failed to deserialize player data"));
+            return;
+        }
         loadPlayer(lookup, compoundTag, player);
     }
 

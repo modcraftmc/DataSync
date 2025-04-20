@@ -13,10 +13,6 @@ public class DatasyncInventory {
 
     public DatasyncInventory() {
         LOGGER.info("DatasyncInventory loading...");
-
-        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerJoined);
-        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerSave);
-        NeoForge.EVENT_BUS.addListener(PlayerDataSynchronizer::onPlayerLeaved);
         NeoForge.EVENT_BUS.addListener(this::onCrossServerCoreReadyEvent);
 
         LOGGER.info("DatasyncInventory loaded !");

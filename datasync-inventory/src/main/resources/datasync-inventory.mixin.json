@@ -5,6 +5,8 @@
   "client" : [
   ],
   "server": [
+    "AttachmentHolderMixin",
+    "EntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

@@ -9,6 +9,7 @@ import fr.modcraftmc.datasync.inventory.message.TransferData;
 import fr.modcraftmc.datasync.inventory.serialization.PlayerSerializer;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
@@ -27,7 +28,7 @@ public class PlayerDataSynchronizer {
     public static ISharedDataStore databasePlayerData = new SharedDataStore(References.PLAYER_DATA_COLLECTION_NAME);
     private static List<ServerPlayer> savablePlayers = new ArrayList<>();
 
-    public static void checkSavablePlayers(){
+    public static void checkSavablePlayers() {
         MinecraftServer server = ServerLifecycleHooks.getCurrentServer();
         savablePlayers.removeIf(player -> !server.getPlayerList().getPlayers().contains(player));
     }
@@ -36,9 +37,9 @@ public class PlayerDataSynchronizer {
         playerData.removeIf(temporalPlayerData -> temporalPlayerData.time + keepTime < System.currentTimeMillis() / 1000);
     }
 
-    @SubscribeEvent
+    @SubscribeEvent(priority = EventPriority.HIGH)
     public static void onPlayerJoined(PlayerEvent.PlayerLoggedInEvent event) {
-        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
+        ServerPlayer player = ((ServerPlayer) event.getEntity());
         CrossServerCoreAPI.getPlayer(player.getUUID()).ifPresentOrElse(syncPlayer -> {
             if (loadDataFromTransferBuffer(player, syncPlayer)) return;
             DatasyncInventory.LOGGER.info(String.format("No transfer data found for player %s (normal if first connection on this group)", syncPlayer.getName()));
@@ -50,7 +51,7 @@ public class PlayerDataSynchronizer {
     }
 
     @SubscribeEvent
-    public static void onPlayerSave(PlayerEvent.SaveToFile event){
+    public static void onPlayerSave(PlayerEvent.SaveToFile event) {
         checkSavablePlayers();
         ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
         if(savablePlayers.contains(player))
@@ -58,9 +59,9 @@ public class PlayerDataSynchronizer {
     }
 
     @SubscribeEvent
-    public static void onPlayerLeaved(PlayerEvent.PlayerLoggedOutEvent event){
+    public static void onPlayerLeaved(PlayerEvent.PlayerLoggedOutEvent event) {
         checkSavablePlayers();
-        ServerPlayer player = ServerLifecycleHooks.getCurrentServer().getPlayerList().getPlayer(event.getEntity().getUUID());
+        ServerPlayer player = ((ServerPlayer) event.getEntity());
         if(savablePlayers.contains(player)) {
             CrossServerCoreAPI.getPlayer(player.getUUID()).ifPresentOrElse(syncPlayer -> {
                 broadcastPlayerDataToTransferBuffer(syncPlayer, PlayerSerializer.serializePlayer(player));

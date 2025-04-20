@@ -5,6 +5,8 @@ import com.mojang.serialization.DataResult;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import fr.modcraftmc.datasync.inventory.DatasyncInventory;
 import fr.modcraftmc.datasync.inventory.References;
+import fr.modcraftmc.datasync.inventory.mixin.AttachmentHolderMixin;
+import fr.modcraftmc.datasync.inventory.mixin.EntityMixin;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.core.component.PatchedDataComponentMap;
@@ -22,6 +24,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.attachment.AttachmentHolder;
 import net.neoforged.neoforge.capabilities.ItemCapability;
 import net.neoforged.neoforge.energy.IEnergyStorage;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -221,7 +224,7 @@ public class PlayerSerializer {
     }
 
     public static void savePlayer(ServerPlayer player, CompoundTag nbt){
-        HolderLookup.Provider lookup = ServerLifecycleHooks.getCurrentServer().registryAccess();
+        HolderLookup.Provider lookup = player.registryAccess();
 
         CompoundTag playerTag = new CompoundTag();
         player.getFoodData().addAdditionalSaveData(playerTag);
@@ -237,6 +240,11 @@ public class PlayerSerializer {
         playerTag.putInt("GameMode", player.gameMode.getGameModeForPlayer().getId());
         player.getAbilities().addSaveData(playerTag);
         playerTag.put("EnderItems", player.getEnderChestInventory().createTag(lookup));
+
+        CompoundTag attachments = player.serializeAttachments(lookup);
+        if (attachments != null) playerTag.put(ServerPlayer.ATTACHMENTS_NBT_KEY, attachments);
+        if (((EntityMixin) player).datasync_getPersistentData() != null) playerTag.put("NeoForgeData", ((EntityMixin) player).datasync_getPersistentData().copy());
+
         nbt.put(PLAYER_DATA_IDENTIFIER, playerTag);
         savePlayerCurios(lookup, player, nbt);
         savePlayerAdvancements(player, nbt);
@@ -455,6 +463,9 @@ public class PlayerSerializer {
         if (playerTag.contains("EnderItems", Tag.TAG_LIST)) {
             player.getEnderChestInventory().fromTag(playerTag.getList("EnderItems", Tag.TAG_COMPOUND), lookup);
         }
+
+        if (playerTag.contains("NeoForgeData", 10)) ((EntityMixin) player).datasync_setPersistentData(playerTag.getCompound("NeoForgeData"));
+        if (playerTag.contains(AttachmentHolder.ATTACHMENTS_NBT_KEY, Tag.TAG_COMPOUND)) ((AttachmentHolderMixin) player).datasync_deserializeAttachments(player.registryAccess(), playerTag.getCompound(AttachmentHolder.ATTACHMENTS_NBT_KEY));
 
         loadPlayerAdvancements(nbt, player);
         loadPlayerCurios(lookup, nbt, player);

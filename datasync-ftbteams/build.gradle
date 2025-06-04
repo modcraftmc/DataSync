@@ -1,6 +1,6 @@
 repositories{
     maven {
-        url "https://maven.saps.dev/minecraft"
+        url "https://maven.ftb.dev/releases"
         content {
             includeGroup "dev.ftb.mods"
         }

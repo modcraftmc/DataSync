@@ -30,10 +30,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.server.ServerLifecycleHooks;
 import org.bson.Document;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class HomeManager {
@@ -162,18 +159,19 @@ public class HomeManager {
 
     public void savePlayerHomesData(ISyncPlayer player) {
         String playerName = player.getName();
+        String playerUUID = player.getUUID().toString();
         if(!playerHomesDataMap.containsKey(player)){
             DatasyncHomes.LOGGER.error("Trying to save player homes data for player {} but player isn't loaded", playerName);
             return;
         }
 
-        Document document = new Document("player", playerName).append("homesData", playerHomesDataMap.get(player).serialize().toString());
+        Document document = new Document("playerUUID", playerUUID).append("playerName", playerName).append("homesData", playerHomesDataMap.get(player).serialize().toString());
 
-        homesCollection.accessOrThrow().replaceOne(new Document("player", playerName), document, new ReplaceOptions().upsert(true));
+        homesCollection.accessOrThrow().replaceOne(new Document("playerUUID", playerUUID), document, new ReplaceOptions().upsert(true));
     }
 
     public HomesData getHomesDataFromDatabase(ISyncPlayer player) {
-        Document document = homesCollection.accessOrThrow().find(new Document("player", player.getName())).first();
+        Document document = homesCollection.accessOrThrow().find(new Document("playerUUID", player.getUUID().toString())).first();
         if(document != null){
             return HomesData.deserialize(SerializationUtil.gson.fromJson(document.get("homesData").toString(), JsonObject.class));
         }
